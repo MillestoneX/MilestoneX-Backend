@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { AppConfig } from './config.type';
+import { AppConfig } from './type';
 
 @Injectable()
 export class AppConfigService {
@@ -23,10 +23,7 @@ export class AppConfigService {
   }
 
   get stellarNetwork(): 'TESTNET' | 'PUBLIC' {
-    return this.configService.get<'TESTNET' | 'PUBLIC'>(
-      'stellarNetwork',
-      { infer: true },
-    )!;
+    return this.configService.get('stellarNetwork', { infer: true })!;
   }
 
   get stellarHorizonUrl(): string {
