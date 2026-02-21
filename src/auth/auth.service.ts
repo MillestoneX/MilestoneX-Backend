@@ -1,16 +1,27 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
+import { VerifyEmailDto } from './dtos/verify-email.dto';
+import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
 import { User, UserRole } from '../users/entities/user.entity';
 
 @Injectable()
 export class AuthService {
+import type { EmailService } from './interfaces/email.interface';
+import { User, UserRole } from './entities/user.entity';
+
+@Injectable()
+export class AuthService {
+  // Token expiry time in hours
+  private readonly TOKEN_EXPIRY_HOURS = 24;
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -23,6 +34,14 @@ export class AuthService {
       where: { email: registerDto.email },
     });
 
+    private emailService?: EmailService,
+  ) {}
+
+  async register(registerDto: RegisterDto): Promise<AuthResponse> {
+    // Check if user already exists
+    const existingUser = await this.userRepository.findOne({
+      where: { email: registerDto.email },
+    });
     if (existingUser) {
       throw new ConflictException('User with this email already exists');
     }
@@ -64,6 +83,7 @@ export class AuthService {
       email: user.email,
       role: user.role,
       walletAddress: user.walletAddress,
+      role: user.role,
     };
 
     const [accessToken, refreshToken] = await Promise.all([
@@ -82,6 +102,7 @@ export class AuthService {
     user.refreshTokenHash = await bcrypt.hash(refreshToken, saltRounds);
     await this.userRepository.save(user);
 
+    // Return sanitized user object (no password)
     return {
       accessToken,
       refreshToken,
@@ -92,6 +113,8 @@ export class AuthService {
         lastName: user.lastName,
         role: user.role,
         walletAddress: user.walletAddress,
+        role: user.role,
+        isEmailVerified: user.isEmailVerified,
       },
     };
   }

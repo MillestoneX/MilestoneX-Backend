@@ -15,7 +15,8 @@ export interface AuthResponse {
     email: string;
     firstName: string;
     lastName: string;
+    walletAddress: string;
     role: UserRole;
-    walletAddress?: string;
+    isEmailVerified: boolean;
   };
 }
