@@ -44,6 +44,9 @@ export class User {
   @Column({ nullable: true })
   emailVerificationToken: string;
 
+  @Column({ nullable: true, type: 'timestamp' })
+  emailVerificationTokenExpiry: Date;
+
   @CreateDateColumn()
   createdAt: Date;
 

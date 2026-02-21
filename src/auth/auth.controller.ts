@@ -1,8 +1,10 @@
-import { Controller, Post, Body, UseGuards, Request, Get } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Request, Get, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
+import { VerifyEmailDto } from './dtos/verify-email.dto';
+import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { AuthResponse } from './interfaces/auth.interface';
 
 @Controller('auth')
@@ -23,5 +25,19 @@ export class AuthController {
   @Get('profile')
   async getProfile(@Request() req) {
     return req.user;
+  }
+
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
+    return this.authService.resendVerification(resendVerificationDto);
   }
 }
