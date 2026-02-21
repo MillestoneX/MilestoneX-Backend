@@ -4,22 +4,22 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from '../interfaces/auth.interface';
 
+export const JWT_STRATEGY = 'jwt';
+
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
+export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
   constructor(private configService: ConfigService) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: configService.getOrThrow<string>('jwtSecret'),
+      jwtFromRequest:   ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,   // expired tokens → 401 before validate() is called
+      secretOrKey:      configService.getOrThrow<string>('jwtSecret'),
     });
   }
 
-  async validate(payload: JwtPayload) {
-    // In a real implementation, you would validate the user exists in the database
-    // For now, we'll just return the payload
+  async validate(payload: JwtPayload): Promise<JwtPayload> {
     if (!payload.sub) {
       throw new UnauthorizedException();
     }
-    return payload;
+    return payload; // attached to req.user
   }
 }
