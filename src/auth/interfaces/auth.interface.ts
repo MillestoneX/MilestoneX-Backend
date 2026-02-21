@@ -1,7 +1,10 @@
+import { UserRole } from '../entities/user.entity';
+
 export interface JwtPayload {
   sub: string; // user id
   email: string;
   walletAddress: string;
+  role: UserRole;
 }
 
 export interface AuthResponse {
@@ -12,5 +15,7 @@ export interface AuthResponse {
     firstName: string;
     lastName: string;
     walletAddress: string;
+    role: UserRole;
+    isEmailVerified: boolean;
   };
 }
