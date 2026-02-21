@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UserRole } from '../users/entities/user.entity';
 
 describe('AuthController', () => {
   let authController: AuthController;
@@ -36,16 +37,18 @@ describe('AuthController', () => {
 
       const expectedResult = {
         accessToken: 'jwt-token',
+        refreshToken: 'refresh-token',
         user: {
           id: '1',
           email: 'test@example.com',
           firstName: 'John',
           lastName: 'Doe',
+          role: UserRole.USER,
           walletAddress: 'GABC123...',
         },
       };
 
-      jest.spyOn(authService, 'register').mockResolvedValue(expectedResult);
+      jest.spyOn(authService, 'register').mockResolvedValue(expectedResult as any);
 
       const result = await authController.register(registerDto);
 
@@ -63,16 +66,18 @@ describe('AuthController', () => {
 
       const expectedResult = {
         accessToken: 'jwt-token',
+        refreshToken: 'refresh-token',
         user: {
           id: '1',
           email: 'test@example.com',
           firstName: 'John',
           lastName: 'Doe',
+          role: UserRole.USER,
           walletAddress: 'GABC123...',
         },
       };
 
-      jest.spyOn(authService, 'login').mockResolvedValue(expectedResult);
+      jest.spyOn(authService, 'login').mockResolvedValue(expectedResult as any);
 
       const result = await authController.login(loginDto);
 
