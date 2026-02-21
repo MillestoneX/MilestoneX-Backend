@@ -1,27 +1,42 @@
-import { Module } from '@nestjs/common';
-import { JwtModule, JwtModuleOptions } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
+import {
+  MiddlewareConsumer,
+  Module,
+  NestModule,
+  RequestMethod,
+} from '@nestjs/common';
+import { PassportModule } from '@nestjs/passport';
+import { JwtModule } from '@nestjs/jwt';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+
 import { JwtStrategy } from './strategies/jwt.strategy';
-import { User } from '../users/entities/user.entity';
+import { TokenValidationMiddleware } from './middleware/token-validation.middleware';
+import { JwtAuthGuard } from './guard/jwt-auth.guard';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    PassportModule,
     JwtModule.registerAsync({
-      useFactory: (configService: ConfigService): JwtModuleOptions => ({
-        secret: configService.get<string>('jwtSecret'),
+      imports:    [ConfigModule],
+      inject:     [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret:      config.getOrThrow<string>('jwtSecret'),
         signOptions: {
-          expiresIn: (configService.get<string>('jwtExpiresIn') || '1h') as any,
+          expiresIn: parseInt(config.get<string>('jwtExpiresIn', '604800'), 10),
         },
       }),
-      inject: [ConfigService],
     }),
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  providers: [
+    JwtStrategy,
+    { provide: APP_GUARD, useClass: JwtAuthGuard },
+  ],
+  exports: [JwtModule],
 })
-export class AuthModule { }
+export class AuthModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(TokenValidationMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}
