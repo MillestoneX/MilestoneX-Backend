@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Inject, Optional } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -10,6 +10,7 @@ import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
 import { User, UserRole } from '../users/entities/user.entity';
+import { ChangePasswordDto } from '../users/dtos/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -19,6 +20,45 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
   ) { }
+
+  // Change password for a given user id
+  async changePassword(userId: string, changeDto: ChangePasswordDto): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const isCurrentValid = await bcrypt.compare(changeDto.currentPassword, user.password);
+    if (!isCurrentValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Hash new password
+    const saltRounds = 10;
+    const hashed = await bcrypt.hash(changeDto.newPassword, saltRounds);
+
+    // Update password and invalidate refresh tokens (clear refreshTokenHash)
+    user.password = hashed;
+    user.refreshTokenHash = null;
+    await this.userRepository.save(user);
+
+    // Try to send confirmation email if an email service is registered (optional)
+    try {
+      // If an injected email service exposes a `sendPasswordChangedEmail` method, call it.
+      // We inject under token 'EMAIL_SERVICE' elsewhere in the app if available.
+      // @ts-ignore
+      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordChangedEmail === 'function') {
+        // @ts-ignore
+        await (this as any).emailService.sendPasswordChangedEmail(user.email, user.firstName);
+      }
+    } catch (err) {
+      // Do not fail the password change if email sending fails
+      // eslint-disable-next-line no-console
+      console.warn('Failed to send password change email', err);
+    }
+
+    return { message: 'Password changed successfully' };
+  }
 
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const existingUser = await this.userRepository.findOne({
