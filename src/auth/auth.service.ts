@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import * as crypto from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
@@ -185,5 +186,86 @@ export class AuthService {
 
     // Logic to update token and send email would go here
     return { message: 'Verification email resent' };
+  }
+
+  async forgotPassword(email: string): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { email } });
+
+    // Always return success for security reasons
+    if (!user) {
+      return { message: 'If an account with that email exists, a reset link has been sent' };
+    }
+
+    const selector = crypto.randomBytes(16).toString('hex');
+    const validator = crypto.randomBytes(32).toString('hex');
+    const saltRounds = 10;
+    const validatorHash = await bcrypt.hash(validator, saltRounds);
+
+    user.resetPasswordTokenSelector = selector;
+    user.resetPasswordTokenHash = validatorHash;
+    user.resetPasswordTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    await this.userRepository.save(user);
+
+    const token = `${selector}.${validator}`;
+
+    try {
+      // @ts-ignore
+      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordResetEmail === 'function') {
+        // @ts-ignore
+        await (this as any).emailService.sendPasswordResetEmail(user.email, token, user.firstName);
+      }
+    } catch (err) {
+      // do not reveal email failures
+      // eslint-disable-next-line no-console
+      console.warn('Failed to send password reset email', err);
+    }
+
+    return { message: 'If an account with that email exists, a reset link has been sent' };
+  }
+
+  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+    const parts = token.split('.');
+    if (parts.length !== 2) {
+      throw new BadRequestException('Invalid token');
+    }
+
+    const [selector, validator] = parts;
+    const user = await this.userRepository.findOne({ where: { resetPasswordTokenSelector: selector } });
+    if (!user || !user.resetPasswordTokenHash || !user.resetPasswordTokenExpiry) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    if (user.resetPasswordTokenExpiry < new Date()) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    const isValid = await bcrypt.compare(validator, user.resetPasswordTokenHash);
+    if (!isValid) {
+      throw new BadRequestException('Invalid or expired token');
+    }
+
+    // Hash new password and clear reset token fields
+    const saltRounds = 10;
+    const hashed = await bcrypt.hash(newPassword, saltRounds);
+    user.password = hashed;
+    user.resetPasswordTokenSelector = null;
+    user.resetPasswordTokenHash = null;
+    user.resetPasswordTokenExpiry = null;
+    // Invalidate refresh tokens/sessions
+    user.refreshTokenHash = null;
+    await this.userRepository.save(user);
+
+    try {
+      // @ts-ignore
+      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordChangedEmail === 'function') {
+        // @ts-ignore
+        await (this as any).emailService.sendPasswordChangedEmail(user.email, user.firstName);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to send password changed email', err);
+    }
+
+    return { message: 'Password reset successfully' };
   }
 }
