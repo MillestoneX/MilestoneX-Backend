@@ -44,6 +44,15 @@ export class User {
     emailVerificationTokenExpiry: Date | null;
 
     @Column({ nullable: true })
+    resetPasswordTokenSelector: string | null;
+
+    @Column({ nullable: true })
+    resetPasswordTokenHash: string | null;
+
+    @Column({ nullable: true, type: 'timestamp' })
+    resetPasswordTokenExpiry: Date | null;
+
+    @Column({ nullable: true })
     refreshTokenHash: string | null;
 
     @CreateDateColumn()

@@ -1,5 +1,7 @@
 export interface EmailService {
   sendVerificationEmail(to: string, token: string, firstName: string): Promise<void>;
+  sendPasswordResetEmail?(to: string, token: string, firstName: string): Promise<void>;
+  sendPasswordChangedEmail?(to: string, firstName: string): Promise<void>;
 }
 
 export interface VerificationEmailData {
