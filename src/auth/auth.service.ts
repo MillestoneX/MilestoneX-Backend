@@ -10,8 +10,10 @@ import { LoginDto } from './dtos/login.dto';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
-import { User, UserRole } from '../users/entities/user.entity';
+import { User, UserRole, KYCStatus } from '../users/entities/user.entity';
 import { ChangePasswordDto } from '../users/dtos/change-password.dto';
+import { SubmitKYCDto } from '../users/dtos/submit-kyc.dto';
+import { UpdateKYCDto } from '../users/dtos/update-kyc.dto';
 
 @Injectable()
 export class AuthService {
@@ -267,5 +269,68 @@ export class AuthService {
     }
 
     return { message: 'Password reset successfully' };
+  }
+
+  async submitKYC(userId: string, submitDto: SubmitKYCDto): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    user.kycStatus = KYCStatus.PENDING;
+    user.kycDocumentUrl = submitDto.documentUrl;
+    user.kycSubmittedAt = new Date();
+    user.kycRejectionReason = null;
+    await this.userRepository.save(user);
+
+    try {
+      // @ts-ignore
+      if ((this as any).emailService && typeof (this as any).emailService.sendKYCSubmittedEmail === 'function') {
+        // @ts-ignore
+        await (this as any).emailService.sendKYCSubmittedEmail(user.email, user.firstName);
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to send KYC submitted email', err);
+    }
+
+    return { message: 'KYC documents submitted for review' };
+  }
+
+  async updateKYCStatus(userId: string, updateDto: UpdateKYCDto): Promise<{ message: string }> {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const oldStatus = user.kycStatus;
+    user.kycStatus = updateDto.status;
+
+    if (updateDto.status === KYCStatus.APPROVED) {
+      user.kycVerifiedAt = new Date();
+      user.kycRejectionReason = null;
+    } else if (updateDto.status === KYCStatus.REJECTED) {
+      user.kycRejectionReason = updateDto.rejectionReason || 'KYC rejected';
+    }
+
+    await this.userRepository.save(user);
+
+    try {
+      // @ts-ignore
+      if ((this as any).emailService && typeof (this as any).emailService.sendKYCStatusChangeEmail === 'function') {
+        // @ts-ignore
+        await (this as any).emailService.sendKYCStatusChangeEmail(
+          user.email,
+          user.firstName,
+          updateDto.status,
+          updateDto.rejectionReason || undefined,
+        );
+      }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to send KYC status change email', err);
+    }
+
+    return { message: `KYC status updated to ${updateDto.status}` };
   }
 }
