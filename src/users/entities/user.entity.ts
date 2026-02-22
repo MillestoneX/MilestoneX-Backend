@@ -7,6 +7,13 @@ export enum UserRole {
     DONOR = 'donor',
 }
 
+export enum KYCStatus {
+    NONE = 'none',
+    PENDING = 'pending',
+    APPROVED = 'approved',
+    REJECTED = 'rejected',
+}
+
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')
@@ -54,6 +61,25 @@ export class User {
 
     @Column({ nullable: true })
     refreshTokenHash: string | null;
+
+    @Column({
+        type: 'enum',
+        enum: KYCStatus,
+        default: KYCStatus.NONE,
+    })
+    kycStatus: KYCStatus;
+
+    @Column({ nullable: true, type: 'timestamp' })
+    kycSubmittedAt: Date | null;
+
+    @Column({ nullable: true, type: 'timestamp' })
+    kycVerifiedAt: Date | null;
+
+    @Column({ nullable: true })
+    kycDocumentUrl: string | null;
+
+    @Column({ nullable: true })
+    kycRejectionReason: string | null;
 
     @CreateDateColumn()
     createdAt: Date;
