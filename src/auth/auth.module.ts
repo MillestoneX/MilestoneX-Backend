@@ -10,6 +10,8 @@ import { PassportModule } from '@nestjs/passport';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../users/entities/user.entity';
 
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { TokenValidationMiddleware } from './middleware/token-validation.middleware';
@@ -18,13 +20,14 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
 @Module({
   imports: [
     PassportModule,
+    TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports:    [ConfigModule],
       inject:     [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret:      config.getOrThrow<string>('jwtSecret'),
         signOptions: {
-          expiresIn: parseInt(config.get<string>('jwtExpiresIn', '604800'), 10),
+          expiresIn: '15m',
         },
       }),
     }),

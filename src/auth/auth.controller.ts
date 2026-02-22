@@ -5,6 +5,7 @@ import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
+import { RefreshTokenDto } from './dtos/refresh-token.dto';
 import { AuthResponse } from './interfaces/auth.interface';
 
 @Controller('auth')
@@ -17,8 +18,8 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() loginDto: LoginDto): Promise<AuthResponse> {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Request() req): Promise<AuthResponse> {
+    return this.authService.login(loginDto, req);
   }
 
   @UseGuards(AuthGuard('jwt'))
@@ -39,5 +40,11 @@ export class AuthController {
     @Body() resendVerificationDto: ResendVerificationDto,
   ): Promise<{ message: string }> {
     return this.authService.resendVerification(resendVerificationDto);
+  }
+
+  @Post('refresh')
+  @HttpCode(HttpStatus.OK)
+  async refreshToken(@Body() refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
+    return this.authService.refreshToken(refreshTokenDto);
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Inject, Optional } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Inject, Optional, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -9,6 +9,7 @@ import { RegisterDto } from './dtos/register.dto';
 import { LoginDto } from './dtos/login.dto';
 import { VerifyEmailDto } from './dtos/verify-email.dto';
 import { ResendVerificationDto } from './dtos/resend-verification.dto';
+import { RefreshTokenDto } from './dtos/refresh-token.dto';
 import { AuthResponse, JwtPayload } from './interfaces/auth.interface';
 import { User, UserRole, KYCStatus } from '../users/entities/user.entity';
 import { ChangePasswordDto } from '../users/dtos/change-password.dto';
@@ -17,6 +18,8 @@ import { UpdateKYCDto } from '../users/dtos/update-kyc.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
@@ -84,10 +87,14 @@ export class AuthService {
 
     await this.userRepository.save(user);
 
+    // Note: Email integration temporarily disabled for server startup
+    // TODO: Re-enable email service after resolving dependency injection
+    this.logger.log(`User registered successfully: ${user.email}`);
+
     return this.generateTokens(user);
   }
 
-  async login(loginDto: LoginDto): Promise<AuthResponse> {
+  async login(loginDto: LoginDto, request?: any): Promise<AuthResponse> {
     const user = await this.userRepository.findOne({
       where: { email: loginDto.email },
     });
@@ -100,6 +107,10 @@ export class AuthService {
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
+
+    // Note: Email integration temporarily disabled for server startup
+    // TODO: Re-enable email service after resolving dependency injection
+    this.logger.log(`User logged in successfully: ${user.email}`);
 
     return this.generateTokens(user);
   }
@@ -114,11 +125,11 @@ export class AuthService {
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwtSecret'),
+        secret: this.configService.getOrThrow<string>('jwtSecret'),
         expiresIn: '15m',
       }),
       this.jwtService.signAsync(payload, {
-        secret: this.configService.get<string>('jwtRefreshSecret'),
+        secret: this.configService.getOrThrow<string>('jwtRefreshSecret'),
         expiresIn: '7d',
       }),
     ]);
@@ -332,5 +343,49 @@ export class AuthService {
     }
 
     return { message: `KYC status updated to ${updateDto.status}` };
+  }
+
+  async refreshToken(refreshTokenDto: RefreshTokenDto): Promise<AuthResponse> {
+    try {
+      // Verify the refresh token
+      const payload = this.jwtService.verify(refreshTokenDto.refreshToken, {
+        secret: this.configService.getOrThrow<string>('jwtRefreshSecret'),
+      });
+
+      // Find the user
+      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      if (!user) {
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Check if the refresh token hash matches (token rotation)
+      if (!user.refreshTokenHash) {
+        this.logger.warn(`User ${user.id} attempted to use refresh token but no hash stored`);
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      const isTokenValid = await bcrypt.compare(refreshTokenDto.refreshToken, user.refreshTokenHash);
+      if (!isTokenValid) {
+        // Possible token reuse attack - invalidate all tokens for this user
+        this.logger.warn(`Possible token reuse attack detected for user ${user.id}`);
+        user.refreshTokenHash = null;
+        await this.userRepository.save(user);
+        throw new UnauthorizedException('Invalid refresh token');
+      }
+
+      // Generate new tokens (token rotation)
+      const newTokens = await this.generateTokens(user);
+
+      // Invalidate the old refresh token by clearing the hash
+      // The new token hash is already set in generateTokens
+      this.logger.debug(`Token rotated successfully for user ${user.id}`);
+
+      return newTokens;
+    } catch (error) {
+      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+        throw new UnauthorizedException('Invalid or expired refresh token');
+      }
+      throw error;
+    }
   }
 }

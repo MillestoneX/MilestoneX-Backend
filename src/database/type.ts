@@ -6,4 +6,13 @@ export interface AppConfig {
   jwtExpiresIn: string;
   stellarNetwork: 'TESTNET' | 'PUBLIC';
   stellarHorizonUrl: string;
+  mailHost?: string;
+  mailPort?: number;
+  mailSecure?: boolean;
+  mailUser?: string;
+  mailPass?: string;
+  mailFrom?: string;
+  mailSubjectPrefix?: string;
+  appName?: string;
+  frontendUrl?: string;
 }
