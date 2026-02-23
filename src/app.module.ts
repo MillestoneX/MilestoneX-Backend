@@ -4,8 +4,9 @@ import { AppService } from './app.service';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseModule } from './database/database.module';
 import { AuthModule } from './auth/auth.module';
-import configuration from './database/config';
 import { UsersModule } from './users/users.module';
+import { MailModule } from './modules/mail/mail.module';
+import configuration from './database/config';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { UsersModule } from './users/users.module';
     }),
     DatabaseModule,
     AuthModule,
+    MailModule,
     // Users module provides user-facing endpoints such as change-password
     UsersModule,
   ],
