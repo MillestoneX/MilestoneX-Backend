@@ -4,11 +4,14 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Inject,
 } from '@nestjs/common';
 import { Request, Response } from 'express';
+import { LoggerService } from '../logger/logger.service';
 
 @Catch(HttpException)
 export class HttpExceptionFilter implements ExceptionFilter {
+  constructor(@Inject(LoggerService) private readonly logger?: LoggerService) {}
   catch(exception: HttpException, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -31,6 +34,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
             message: msg,
           }))
         : null;
+    }
+
+    // Log the exception with stack trace in non-production
+    if (this.logger) {
+      const trace = (exception as any).stack || null;
+      this.logger.error(`${status} - ${message} - ${request.url}`, trace, {
+        path: request.url,
+        method: request.method,
+      });
     }
 
     response.status(status).json({
