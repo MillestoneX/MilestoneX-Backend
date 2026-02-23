@@ -8,6 +8,7 @@ import { UsersModule } from './users/users.module';
 import { MailModule } from './modules/mail/mail.module';
 import configuration from './database/config';
 import { LoggerModule } from './logger/logger.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { LoggerModule } from './logger/logger.module';
     MailModule,
     // Users module provides user-facing endpoints such as change-password
     UsersModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
