@@ -27,7 +27,6 @@ import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SubmitKYCDto } from './dtos/submit-kyc.dto';
 import { UpdateKYCDto } from './dtos/update-kyc.dto';
 import { UpdateUserDto } from './dtos/update-user.dto';
-import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from './entities/user.entity';
