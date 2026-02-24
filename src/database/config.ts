@@ -17,4 +17,5 @@ export default (): AppConfig => ({
   mailSubjectPrefix: process.env.MAIL_SUBJECT_PREFIX,
   appName: process.env.APP_NAME,
   frontendUrl: process.env.FRONTEND_URL,
+  enableSwagger: process.env.ENABLE_SWAGGER === 'true' || process.env.NODE_ENV !== 'production',
 });
