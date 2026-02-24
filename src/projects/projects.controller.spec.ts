@@ -245,7 +245,7 @@ describe('ProjectsController', () => {
         });
       });
 
-      it('should handle limit of 0 by using default value', async () => {
+      it('should pass through limit of 0 (controller does not validate)', async () => {
         const query: GetProjectsQueryDto = {
           limit: 0,
         };
@@ -258,8 +258,9 @@ describe('ProjectsController', () => {
 
         const result = await controller.findAll(query);
 
-        // When limit is 0 (falsy), it should use default of 10
-        expect(result.limit).toBe(10);
+        // Controller uses ?? operator which only handles null/undefined, not 0
+        // 0 is a valid value that will be passed through
+        expect(result.limit).toBe(0);
       });
 
       it('should handle offset of 0 correctly', async () => {

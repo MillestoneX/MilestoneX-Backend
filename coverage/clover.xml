@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<coverage generated="1771947877694" clover="3.2.0">
-  <project timestamp="1771947877694" name="All files">
-    <metrics statements="756" coveredstatements="125" conditionals="394" coveredconditionals="52" methods="100" coveredmethods="7" elements="1250" coveredelements="184" complexity="0" loc="756" ncloc="756" packages="20" files="47" classes="47"/>
+<coverage generated="1771948364709" clover="3.2.0">
+  <project timestamp="1771948364709" name="All files">
+    <metrics statements="756" coveredstatements="118" conditionals="394" coveredconditionals="49" methods="100" coveredmethods="8" elements="1250" coveredelements="175" complexity="0" loc="756" ncloc="756" packages="20" files="47" classes="47"/>
     <package name="src">
       <metrics statements="48" coveredstatements="0" conditionals="12" coveredconditionals="0" methods="5" coveredmethods="0"/>
       <file name="app.controller.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\app.controller.ts">
@@ -279,7 +279,7 @@
       </file>
     </package>
     <package name="src.auth.decorators">
-      <metrics statements="8" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="0"/>
+      <metrics statements="8" coveredstatements="3" conditionals="2" coveredconditionals="0" methods="2" coveredmethods="1"/>
       <file name="current-user.decorator.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\auth\decorators\current-user.decorator.ts">
         <metrics statements="5" coveredstatements="0" conditionals="2" coveredconditionals="0" methods="1" coveredmethods="0"/>
         <line num="1" count="0" type="stmt"/>
@@ -289,10 +289,10 @@
         <line num="22" count="0" type="cond" truecount="0" falsecount="2"/>
       </file>
       <file name="public.decorator.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\auth\decorators\public.decorator.ts">
-        <metrics statements="3" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="3" count="0" type="stmt"/>
-        <line num="13" count="0" type="stmt"/>
+        <metrics statements="3" coveredstatements="3" conditionals="0" coveredconditionals="0" methods="1" coveredmethods="1"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="13" count="1" type="stmt"/>
       </file>
     </package>
     <package name="src.auth.dtos">
@@ -617,19 +617,19 @@
       </file>
     </package>
     <package name="src.projects">
-      <metrics statements="43" coveredstatements="26" conditionals="29" coveredconditionals="16" methods="4" coveredmethods="2"/>
+      <metrics statements="43" coveredstatements="16" conditionals="29" coveredconditionals="13" methods="4" coveredmethods="2"/>
       <file name="projects.controller.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\projects\projects.controller.ts">
-        <metrics statements="10" coveredstatements="0" conditionals="12" coveredconditionals="0" methods="2" coveredmethods="0"/>
-        <line num="1" count="0" type="stmt"/>
-        <line num="2" count="0" type="stmt"/>
-        <line num="3" count="0" type="stmt"/>
-        <line num="4" count="0" type="stmt"/>
-        <line num="5" count="0" type="stmt"/>
-        <line num="9" count="0" type="stmt"/>
-        <line num="10" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="17" count="0" type="cond" truecount="0" falsecount="4"/>
-        <line num="18" count="0" type="stmt"/>
-        <line num="19" count="0" type="stmt"/>
+        <metrics statements="10" coveredstatements="10" conditionals="12" coveredconditionals="10" methods="2" coveredmethods="2"/>
+        <line num="1" count="1" type="stmt"/>
+        <line num="2" count="1" type="stmt"/>
+        <line num="3" count="1" type="stmt"/>
+        <line num="4" count="1" type="stmt"/>
+        <line num="5" count="1" type="stmt"/>
+        <line num="9" count="1" type="stmt"/>
+        <line num="10" count="24" type="cond" truecount="3" falsecount="1"/>
+        <line num="17" count="1" type="cond" truecount="3" falsecount="1"/>
+        <line num="18" count="37" type="stmt"/>
+        <line num="19" count="35" type="stmt"/>
       </file>
       <file name="projects.module.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\projects\projects.module.ts">
         <metrics statements="7" coveredstatements="0" conditionals="0" coveredconditionals="0" methods="0" coveredmethods="0"/>
@@ -642,33 +642,33 @@
         <line num="14" count="0" type="stmt"/>
       </file>
       <file name="projects.service.ts" path="C:\Users\hp\Desktop\wave\stellarAid-api\src\projects\projects.service.ts">
-        <metrics statements="26" coveredstatements="26" conditionals="17" coveredconditionals="16" methods="2" coveredmethods="2"/>
+        <metrics statements="26" coveredstatements="6" conditionals="17" coveredconditionals="3" methods="2" coveredmethods="0"/>
         <line num="1" count="1" type="stmt"/>
         <line num="2" count="1" type="stmt"/>
         <line num="3" count="1" type="stmt"/>
         <line num="4" count="1" type="stmt"/>
         <line num="5" count="1" type="stmt"/>
         <line num="11" count="1" type="stmt"/>
-        <line num="14" count="24" type="cond" truecount="3" falsecount="1"/>
-        <line num="27" count="30" type="stmt"/>
-        <line num="29" count="30" type="stmt"/>
-        <line num="52" count="29" type="cond" truecount="2" falsecount="0"/>
-        <line num="53" count="4" type="stmt"/>
-        <line num="55" count="25" type="stmt"/>
-        <line num="60" count="29" type="cond" truecount="2" falsecount="0"/>
-        <line num="61" count="10" type="stmt"/>
-        <line num="64" count="29" type="cond" truecount="2" falsecount="0"/>
-        <line num="65" count="5" type="stmt"/>
-        <line num="71" count="29" type="cond" truecount="4" falsecount="0"/>
-        <line num="73" count="2" type="stmt"/>
-        <line num="74" count="2" type="stmt"/>
-        <line num="76" count="2" type="stmt"/>
-        <line num="77" count="2" type="stmt"/>
-        <line num="80" count="25" type="stmt"/>
-        <line num="81" count="25" type="stmt"/>
-        <line num="84" count="29" type="stmt"/>
-        <line num="86" count="28" type="stmt"/>
-        <line num="88" count="27" type="stmt"/>
+        <line num="14" count="0" type="cond" truecount="3" falsecount="1"/>
+        <line num="27" count="0" type="stmt"/>
+        <line num="29" count="0" type="stmt"/>
+        <line num="52" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="53" count="0" type="stmt"/>
+        <line num="55" count="0" type="stmt"/>
+        <line num="60" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="61" count="0" type="stmt"/>
+        <line num="64" count="0" type="cond" truecount="0" falsecount="2"/>
+        <line num="65" count="0" type="stmt"/>
+        <line num="71" count="0" type="cond" truecount="0" falsecount="4"/>
+        <line num="73" count="0" type="stmt"/>
+        <line num="74" count="0" type="stmt"/>
+        <line num="76" count="0" type="stmt"/>
+        <line num="77" count="0" type="stmt"/>
+        <line num="80" count="0" type="stmt"/>
+        <line num="81" count="0" type="stmt"/>
+        <line num="84" count="0" type="stmt"/>
+        <line num="86" count="0" type="stmt"/>
+        <line num="88" count="0" type="stmt"/>
       </file>
     </package>
     <package name="src.projects.dtos">
