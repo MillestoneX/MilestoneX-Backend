@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
-import { ProjectsService } from '../../src/projects/projects.service';
-import { Project, ProjectStatus, ProjectCategory } from '../../src/projects/entities/project.entity';
-import { GetProjectsQueryDto, ProjectSortBy } from '../../src/projects/dtos/get-projects-query.dto';
+import { ProjectsService } from './projects.service';
+import { Project, ProjectStatus, ProjectCategory } from './entities/project.entity';
+import { GetProjectsQueryDto, ProjectSortBy } from './dtos/get-projects-query.dto';
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
@@ -359,7 +359,7 @@ describe('ProjectsService', () => {
         );
       });
 
-      it('should handle empty search string', async () => {
+      it('should not apply search filter for empty string', async () => {
         const query: GetProjectsQueryDto = {
           search: '',
         };
@@ -369,11 +369,11 @@ describe('ProjectsService', () => {
 
         const result = await service.findAll(query);
 
-        // Empty string should still trigger the search filter
-        expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
-          '(LOWER(project.title) LIKE :search OR LOWER(project.description) LIKE :search)',
-          { search: '%%' },
+        // Empty string is falsy, so search filter should not be applied
+        const searchFilterCalls = mockQueryBuilder.andWhere.mock.calls.filter(
+          (call) => call[0].includes('LIKE'),
         );
+        expect(searchFilterCalls).toHaveLength(0);
         expect(result.data).toHaveLength(2);
       });
 
