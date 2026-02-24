@@ -13,4 +13,10 @@ export const validationSchema = Joi.object({
     .required(),
 
   STELLAR_HORIZON_URL: Joi.string().uri().required(),
+
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
+
+  ENABLE_SWAGGER: Joi.boolean().default(false),
 });
