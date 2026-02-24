@@ -1,17 +1,30 @@
-import { Controller, Post, Body, UseGuards, Request, HttpCode, HttpStatus, Patch, Param, ForbiddenException } from '@nestjs/common';
+import { Controller, Post, Get, Body, UseGuards, Request, HttpCode, HttpStatus, Patch, Param, ForbiddenException } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from '../auth/auth.service';
+import { UsersService } from './users.service';
 import { ChangePasswordDto } from './dtos/change-password.dto';
 import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SubmitKYCDto } from './dtos/submit-kyc.dto';
 import { UpdateKYCDto } from './dtos/update-kyc.dto';
+import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from './entities/user.entity';
+import { JwtPayload } from '../auth/interfaces/auth.interface';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
+  ) {}
+
+  @UseGuards(AuthGuard('jwt'))
+  @Get('profile')
+  async getProfile(@CurrentUser() user: JwtPayload): Promise<ProfileResponseDto> {
+    return this.usersService.getProfile(user.sub);
+  }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('change-password')
