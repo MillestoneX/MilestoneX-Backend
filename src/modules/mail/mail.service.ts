@@ -28,7 +28,7 @@ export class MailService {
     try {
       const templatePath = path.join(this.templatesPath, 'welcome.ejs');
       const template = fs.readFileSync(templatePath, 'utf-8');
-      
+
       const templateData = {
         firstName: user.firstName,
         username: user.username,
@@ -39,18 +39,26 @@ export class MailService {
       };
 
       const html = await ejs.render(template, templateData);
-      
+
       const mailOptions = {
-        from: this.configService.get<string>('MAIL_FROM', 'noreply@stellaraid.com'),
+        from: this.configService.get<string>(
+          'MAIL_FROM',
+          'noreply@stellaraid.com',
+        ),
         to: user.email,
         subject: `${this.configService.get<string>('MAIL_SUBJECT_PREFIX', '[StellarAid]')} Welcome to ${templateData.appName}!`,
         html,
       };
 
       await this.sendMail(mailOptions);
-      this.logger.log(`Welcome email sent successfully to: ${this.maskEmail(user.email)}`);
+      this.logger.log(
+        `Welcome email sent successfully to: ${this.maskEmail(user.email)}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to send welcome email to ${this.maskEmail(user.email)}:`, error.message);
+      this.logger.error(
+        `Failed to send welcome email to ${this.maskEmail(user.email)}:`,
+        error.message,
+      );
       throw error;
     }
   }
@@ -59,7 +67,7 @@ export class MailService {
     try {
       const templatePath = path.join(this.templatesPath, 'login.ejs');
       const template = fs.readFileSync(templatePath, 'utf-8');
-      
+
       const loginTime = metadata?.time || new Date();
       const templateData = {
         firstName: user.firstName,
@@ -75,18 +83,26 @@ export class MailService {
       };
 
       const html = await ejs.render(template, templateData);
-      
+
       const mailOptions = {
-        from: this.configService.get<string>('MAIL_FROM', 'noreply@stellaraid.com'),
+        from: this.configService.get<string>(
+          'MAIL_FROM',
+          'noreply@stellaraid.com',
+        ),
         to: user.email,
         subject: `${this.configService.get<string>('MAIL_SUBJECT_PREFIX', '[StellarAid]')} New Login Notification`,
         html,
       };
 
       await this.sendMail(mailOptions);
-      this.logger.log(`Login notification email sent successfully to: ${this.maskEmail(user.email)}`);
+      this.logger.log(
+        `Login notification email sent successfully to: ${this.maskEmail(user.email)}`,
+      );
     } catch (error) {
-      this.logger.error(`Failed to send login email to ${this.maskEmail(user.email)}:`, error.message);
+      this.logger.error(
+        `Failed to send login email to ${this.maskEmail(user.email)}:`,
+        error.message,
+      );
       throw error;
     }
   }

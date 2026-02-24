@@ -11,17 +11,23 @@ import { IS_PUBLIC_KEY, Public } from '../decorators/public.decorator';
 import { UserRole } from 'src/users/entities/user.entity';
 
 function mockContext(isPublic = false): ExecutionContext {
-  const handler = isPublic ? Object.assign(() => {}, { [IS_PUBLIC_KEY]: true }) : () => {};
+  const handler = isPublic
+    ? Object.assign(() => {}, { [IS_PUBLIC_KEY]: true })
+    : () => {};
   return {
-    getHandler:   () => handler,
-    getClass:     () => ({}),
+    getHandler: () => handler,
+    getClass: () => ({}),
     switchToHttp: () => ({
       getRequest: () => ({ headers: { authorization: 'Bearer a.b.c' } }),
     }),
   } as unknown as ExecutionContext;
 }
 
-const validPayload: JwtPayload = { sub: 'user-uuid', email: 'user@test.com', role: UserRole.USER };
+const validPayload: JwtPayload = {
+  sub: 'user-uuid',
+  email: 'user@test.com',
+  role: UserRole.USER,
+};
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
@@ -32,7 +38,7 @@ describe('JwtAuthGuard', () => {
       providers: [JwtAuthGuard, Reflector],
     }).compile();
 
-    guard     = module.get(JwtAuthGuard);
+    guard = module.get(JwtAuthGuard);
     reflector = module.get(Reflector);
   });
 
@@ -51,15 +57,17 @@ describe('JwtAuthGuard', () => {
   });
 
   it('checks IS_PUBLIC_KEY on both handler and class', () => {
-    const spy = jest.spyOn(reflector, 'getAllAndOverride').mockReturnValue(false);
+    const spy = jest
+      .spyOn(reflector, 'getAllAndOverride')
+      .mockReturnValue(false);
     jest
       .spyOn(Object.getPrototypeOf(JwtAuthGuard.prototype), 'canActivate')
       .mockReturnValue(true);
     guard.canActivate(mockContext());
-    expect(spy).toHaveBeenCalledWith(IS_PUBLIC_KEY, expect.arrayContaining([
-      expect.any(Function),
-      expect.any(Object),
-    ]));
+    expect(spy).toHaveBeenCalledWith(
+      IS_PUBLIC_KEY,
+      expect.arrayContaining([expect.any(Function), expect.any(Object)]),
+    );
   });
 });
 
@@ -85,15 +93,15 @@ describe('JwtStrategy', () => {
   });
 
   it('throws UnauthorizedException when sub is missing', async () => {
-    await expect(
-      strategy.validate({ sub: '' } as JwtPayload),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(strategy.validate({ sub: '' } as JwtPayload)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 
   it('throws UnauthorizedException when payload is empty', async () => {
-    await expect(
-      strategy.validate({} as JwtPayload),
-    ).rejects.toThrow(UnauthorizedException);
+    await expect(strategy.validate({} as JwtPayload)).rejects.toThrow(
+      UnauthorizedException,
+    );
   });
 });
 
@@ -125,7 +133,7 @@ describe('@Public() decorator', () => {
 describe('TokenValidationMiddleware', () => {
   let middleware: TokenValidationMiddleware;
   const next = jest.fn();
-  const res  = {} as Response;
+  const res = {} as Response;
 
   beforeEach(() => {
     middleware = new TokenValidationMiddleware();

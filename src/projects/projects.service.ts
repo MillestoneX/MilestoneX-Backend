@@ -2,7 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Project, ProjectStatus } from './entities/project.entity';
-import { GetProjectsQueryDto, ProjectSortBy } from './dtos/get-projects-query.dto';
+import {
+  GetProjectsQueryDto,
+  ProjectSortBy,
+} from './dtos/get-projects-query.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -11,7 +14,9 @@ export class ProjectsService {
     private readonly projectRepository: Repository<Project>,
   ) {}
 
-  async findAll(query: GetProjectsQueryDto): Promise<{ data: Partial<Project>[]; total: number }> {
+  async findAll(
+    query: GetProjectsQueryDto,
+  ): Promise<{ data: Partial<Project>[]; total: number }> {
     const {
       category,
       status,

@@ -27,15 +27,15 @@ describe('MailService', () => {
           useValue: {
             get: jest.fn((key: string, defaultValue?: string) => {
               const config = {
-                'APP_NAME': 'StellarAid',
-                'FRONTEND_URL': 'http://localhost:3000',
-                'MAIL_FROM': 'noreply@stellaraid.com',
-                'MAIL_SUBJECT_PREFIX': '[StellarAid]',
-                'MAIL_HOST': 'smtp.gmail.com',
-                'MAIL_PORT': 587,
-                'MAIL_SECURE': false,
-                'MAIL_USER': 'test@example.com',
-                'MAIL_PASS': 'test-password',
+                APP_NAME: 'StellarAid',
+                FRONTEND_URL: 'http://localhost:3000',
+                MAIL_FROM: 'noreply@stellaraid.com',
+                MAIL_SUBJECT_PREFIX: '[StellarAid]',
+                MAIL_HOST: 'smtp.gmail.com',
+                MAIL_PORT: 587,
+                MAIL_SECURE: false,
+                MAIL_USER: 'test@example.com',
+                MAIL_PASS: 'test-password',
               };
               return config[key] || defaultValue;
             }),
@@ -98,18 +98,22 @@ describe('MailService', () => {
         expect.objectContaining({
           to: userWithoutFirstName.email,
           subject: '[StellarAid] Welcome to StellarAid!',
-        })
+        }),
       );
     });
 
     it('should handle email sending errors', async () => {
       const mockTemplate = '<html>Welcome <%= firstName %></html>';
       (require('fs').readFileSync as jest.Mock).mockReturnValue(mockTemplate);
-      (require('ejs').render as jest.Mock).mockResolvedValue('<html>Welcome John</html>');
+      (require('ejs').render as jest.Mock).mockResolvedValue(
+        '<html>Welcome John</html>',
+      );
 
       mockTransporter.sendMail.mockRejectedValue(new Error('SMTP Error'));
 
-      await expect(service.sendWelcomeEmail(mockUser)).rejects.toThrow('SMTP Error');
+      await expect(service.sendWelcomeEmail(mockUser)).rejects.toThrow(
+        'SMTP Error',
+      );
     });
   });
 
@@ -156,7 +160,7 @@ describe('MailService', () => {
         expect.objectContaining({
           to: mockUser.email,
           subject: '[StellarAid] New Login Notification',
-        })
+        }),
       );
     });
 
@@ -173,7 +177,7 @@ describe('MailService', () => {
         mockTemplate,
         expect.objectContaining({
           loginTime: expect.any(String),
-        })
+        }),
       );
     });
   });
