@@ -36,6 +36,15 @@ export class User {
     @Column({ nullable: true, unique: true })
     walletAddress: string | null;
 
+    @Column({ nullable: true })
+    country: string | null;
+
+    @Column({ nullable: true, type: 'text' })
+    bio: string | null;
+
+    @Column({ nullable: true })
+    avatarUrl: string | null;
+
     @Column({
         type: 'enum',
         enum: UserRole,
