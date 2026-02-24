@@ -15,4 +15,5 @@ export interface AppConfig {
   mailSubjectPrefix?: string;
   appName?: string;
   frontendUrl?: string;
+  enableSwagger?: boolean;
 }
