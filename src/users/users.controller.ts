@@ -7,6 +7,7 @@ import { ForgotPasswordDto } from './dtos/forgot-password.dto';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SubmitKYCDto } from './dtos/submit-kyc.dto';
 import { UpdateKYCDto } from './dtos/update-kyc.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -24,6 +25,15 @@ export class UsersController {
   @Get('profile')
   async getProfile(@CurrentUser() user: JwtPayload): Promise<ProfileResponseDto> {
     return this.usersService.getProfile(user.sub);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch('profile')
+  async updateProfile(
+    @CurrentUser() user: JwtPayload,
+    @Body() updateUserDto: UpdateUserDto,
+  ): Promise<ProfileResponseDto> {
+    return this.usersService.updateProfile(user.sub, updateUserDto);
   }
 
   @UseGuards(AuthGuard('jwt'))

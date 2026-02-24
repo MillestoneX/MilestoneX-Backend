@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, KYCStatus } from './entities/user.entity';
 import { ProfileResponseDto } from './dtos/profile-response.dto';
+import { UpdateUserDto } from './dtos/update-user.dto';
 
 @Injectable()
 export class UsersService {
@@ -29,6 +30,28 @@ export class UsersService {
     return this.userRepository.save(user);
   }
 
+  async updateProfile(userId: string, dto: UpdateUserDto): Promise<ProfileResponseDto> {
+    const user = await this.findById(userId);
+
+    if (dto.firstName !== undefined) user.firstName = dto.firstName;
+    if (dto.lastName !== undefined) user.lastName = dto.lastName;
+    if (dto.country !== undefined) user.country = dto.country;
+    if (dto.bio !== undefined) user.bio = dto.bio;
+    if (dto.avatarUrl !== undefined) user.avatarUrl = dto.avatarUrl;
+    if (dto.walletAddress !== undefined) user.walletAddress = dto.walletAddress;
+
+    try {
+      await this.userRepository.save(user);
+    } catch (err: any) {
+      if (err.code === '23505') {
+        throw new ConflictException('Wallet address is already linked to another account');
+      }
+      throw err;
+    }
+
+    return this.getProfile(userId);
+  }
+
   async getProfile(userId: string): Promise<ProfileResponseDto> {
     const user = await this.findById(userId);
 
@@ -52,6 +75,9 @@ export class UsersService {
       lastName: user.lastName,
       role: user.role,
       walletAddress: user.walletAddress,
+      country: user.country,
+      bio: user.bio,
+      avatarUrl: user.avatarUrl,
       isEmailVerified: user.isEmailVerified,
       kycStatus: user.kycStatus,
       kycSubmittedAt: user.kycSubmittedAt,
