@@ -7,8 +7,10 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
+import { Donation } from './donation.entity';
 
 export enum ProjectStatus {
   DRAFT = 'draft',
@@ -20,8 +22,9 @@ export enum ProjectStatus {
 }
 
 export enum ProjectCategory {
-  EDUCATION = 'education',
   HEALTH = 'health',
+  EDUCATION = 'education',
+  DISASTER_RELIEF = 'disaster_relief',
   ENVIRONMENT = 'environment',
   COMMUNITY = 'community',
   TECHNOLOGY = 'technology',
@@ -30,6 +33,8 @@ export enum ProjectCategory {
 }
 
 @Entity('projects')
+@Index('IDX_projects_creator_id', ['creatorId'])
+@Index('IDX_projects_status', ['status'])
 export class Project {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -39,6 +44,9 @@ export class Project {
 
   @Column({ type: 'text' })
   description: string;
+
+  @Column({ nullable: true })
+  imageUrl: string | null;
 
   @Column({
     type: 'enum',
@@ -60,18 +68,22 @@ export class Project {
   @Column({ type: 'decimal', precision: 18, scale: 7, default: 0 })
   fundsRaised: number;
 
-  @Column({ nullable: true })
-  imageUrl: string | null;
-
   @Column({ nullable: true, type: 'timestamp' })
   deadline: Date | null;
 
+  @Column({ nullable: true, type: 'text' })
+  rejectionReason: string | null;
+
+  @Index('IDX_projects_creator_id_col')
   @Column()
   creatorId: string;
 
-  @ManyToOne(() => User, { eager: false })
+  @ManyToOne(() => User, { eager: false, onDelete: 'CASCADE' })
   @JoinColumn({ name: 'creatorId' })
   creator: User;
+
+  @OneToMany(() => Donation, (donation) => donation.project, { cascade: true })
+  donations: Donation[];
 
   @CreateDateColumn()
   createdAt: Date;
