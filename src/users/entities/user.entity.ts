@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum UserRole {
     USER = 'user',
@@ -15,6 +15,8 @@ export enum KYCStatus {
 }
 
 @Entity('users')
+@Index('IDX_users_email', ['email'])
+@Index('IDX_users_wallet_address', ['walletAddress'])
 export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
@@ -22,7 +24,7 @@ export class User {
     @Column({ unique: true })
     email: string;
 
-    @Column()
+    @Column({ name: 'password_hash' })
     password: string;
 
     @Column()
@@ -31,7 +33,7 @@ export class User {
     @Column()
     lastName: string;
 
-    @Column({ nullable: true })
+    @Column({ nullable: true, unique: true })
     walletAddress: string | null;
 
     @Column({
