@@ -13,7 +13,7 @@ import { ProfileResponseDto } from './dtos/profile-response.dto';
 import { Public } from '../auth/decorators/public.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { UserRole } from './entities/user.entity';
-import { JwtPayload } from '../auth/interfaces/auth.interface';
+import type { JwtPayload } from '../auth/interfaces/auth.interface';
 
 @ApiTags('Users')
 @Controller('users')
@@ -27,9 +27,9 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @Get('profile')
   @ApiOperation({ summary: 'Get current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile retrieved successfully', type: ProfileResponseDto })
+  @ApiResponse({ status: 200, description: 'Profile retrieved successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async getProfile(@CurrentUser() user: JwtPayload): Promise<ProfileResponseDto> {
+  async getProfile(@CurrentUser() user: JwtPayload) {
     return this.usersService.getProfile(user.sub);
   }
 
@@ -37,13 +37,13 @@ export class UsersController {
   @ApiBearerAuth('JWT-auth')
   @Patch('profile')
   @ApiOperation({ summary: 'Update current user profile' })
-  @ApiResponse({ status: 200, description: 'Profile updated successfully', type: ProfileResponseDto })
+  @ApiResponse({ status: 200, description: 'Profile updated successfully' })
   @ApiResponse({ status: 400, description: 'Invalid input' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async updateProfile(
     @CurrentUser() user: JwtPayload,
     @Body() updateUserDto: UpdateUserDto,
-  ): Promise<ProfileResponseDto> {
+  ) {
     return this.usersService.updateProfile(user.sub, updateUserDto);
   }
 
