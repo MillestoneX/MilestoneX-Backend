@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, KYCStatus } from './entities/user.entity';
@@ -24,13 +28,19 @@ export class UsersService {
     return this.userRepository.findOne({ where: { email } });
   }
 
-  async updateWalletAddress(userId: string, walletAddress: string): Promise<User> {
+  async updateWalletAddress(
+    userId: string,
+    walletAddress: string,
+  ): Promise<User> {
     const user = await this.findById(userId);
     user.walletAddress = walletAddress;
     return this.userRepository.save(user);
   }
 
-  async updateProfile(userId: string, dto: UpdateUserDto): Promise<ProfileResponseDto> {
+  async updateProfile(
+    userId: string,
+    dto: UpdateUserDto,
+  ): Promise<ProfileResponseDto> {
     const user = await this.findById(userId);
 
     if (dto.firstName !== undefined) user.firstName = dto.firstName;
@@ -44,7 +54,9 @@ export class UsersService {
       await this.userRepository.save(user);
     } catch (err: any) {
       if (err.code === '23505') {
-        throw new ConflictException('Wallet address is already linked to another account');
+        throw new ConflictException(
+          'Wallet address is already linked to another account',
+        );
       }
       throw err;
     }
@@ -66,7 +78,9 @@ export class UsersService {
       user.kycStatus === KYCStatus.APPROVED,
     ];
     const completed = completionChecks.filter(Boolean).length;
-    const profileCompletionPercentage = Math.round((completed / completionChecks.length) * 100);
+    const profileCompletionPercentage = Math.round(
+      (completed / completionChecks.length) * 100,
+    );
 
     return {
       id: user.id,

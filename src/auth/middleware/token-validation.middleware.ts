@@ -1,4 +1,8 @@
-import { Injectable, NestMiddleware, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NestMiddleware,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request, Response, NextFunction } from 'express';
 
 /**
@@ -20,7 +24,9 @@ export class TokenValidationMiddleware implements NestMiddleware {
 
     const parts = authHeader.slice(7).split('.');
     if (parts.length !== 3) {
-      throw new UnauthorizedException('Malformed JWT: must have three segments.');
+      throw new UnauthorizedException(
+        'Malformed JWT: must have three segments.',
+      );
     }
 
     next();

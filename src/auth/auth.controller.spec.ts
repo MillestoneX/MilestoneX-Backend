@@ -48,7 +48,9 @@ describe('AuthController', () => {
         },
       };
 
-      jest.spyOn(authService, 'register').mockResolvedValue(expectedResult as any);
+      jest
+        .spyOn(authService, 'register')
+        .mockResolvedValue(expectedResult as any);
 
       const result = await authController.register(registerDto);
 

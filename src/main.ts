@@ -23,11 +23,15 @@ async function bootstrap() {
     const logger = app.get(LoggerService);
 
     // Swagger setup - enabled by default in non-production, configurable via env
-    const enableSwagger = process.env.ENABLE_SWAGGER === 'true' || process.env.NODE_ENV !== 'production';
+    const enableSwagger =
+      process.env.ENABLE_SWAGGER === 'true' ||
+      process.env.NODE_ENV !== 'production';
     if (enableSwagger) {
       const config = new DocumentBuilder()
         .setTitle('StellarAid API')
-        .setDescription('StellarAid Backend API - Blockchain-enabled crowdfunding platform on Stellar network')
+        .setDescription(
+          'StellarAid Backend API - Blockchain-enabled crowdfunding platform on Stellar network',
+        )
         .setVersion('1.0.0')
         .addBearerAuth(
           {
@@ -64,7 +68,9 @@ async function bootstrap() {
 
     await app.listen(process.env.PORT || 3000);
 
-    logger.log(`🚀 Server is running on http://localhost:${process.env.PORT || 3000}`);
+    logger.log(
+      `🚀 Server is running on http://localhost:${process.env.PORT || 3000}`,
+    );
   } catch (error) {
     // If logger is not available yet, fall back to console
     try {
@@ -73,7 +79,7 @@ async function bootstrap() {
       tmpLogger.error('❌ Application failed to start', error.stack);
     } catch (e) {
       // fallback
-      // eslint-disable-next-line no-console
+
       console.error('❌ Application failed to start', error.stack);
     }
     process.exit(1);

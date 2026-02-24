@@ -1,4 +1,13 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException, NotFoundException, Inject, Optional, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  BadRequestException,
+  NotFoundException,
+  Inject,
+  Optional,
+  Logger,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -25,16 +34,22 @@ export class AuthService {
     private userRepository: Repository<User>,
     private jwtService: JwtService,
     private configService: ConfigService,
-  ) { }
+  ) {}
 
   // Change password for a given user id
-  async changePassword(userId: string, changeDto: ChangePasswordDto): Promise<{ message: string }> {
+  async changePassword(
+    userId: string,
+    changeDto: ChangePasswordDto,
+  ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
-    const isCurrentValid = await bcrypt.compare(changeDto.currentPassword, user.password);
+    const isCurrentValid = await bcrypt.compare(
+      changeDto.currentPassword,
+      user.password,
+    );
     if (!isCurrentValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -53,13 +68,20 @@ export class AuthService {
       // If an injected email service exposes a `sendPasswordChangedEmail` method, call it.
       // We inject under token 'EMAIL_SERVICE' elsewhere in the app if available.
       // @ts-ignore
-      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordChangedEmail === 'function') {
+      if (
+        (this as any).emailService &&
+        typeof (this as any).emailService.sendPasswordChangedEmail ===
+          'function'
+      ) {
         // @ts-ignore
-        await (this as any).emailService.sendPasswordChangedEmail(user.email, user.firstName);
+        await (this as any).emailService.sendPasswordChangedEmail(
+          user.email,
+          user.firstName,
+        );
       }
     } catch (err) {
       // Do not fail the password change if email sending fails
-      // eslint-disable-next-line no-console
+
       console.warn('Failed to send password change email', err);
     }
 
@@ -103,7 +125,10 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
@@ -155,14 +180,18 @@ export class AuthService {
   }
 
   async validateUser(payload: JwtPayload): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+    const user = await this.userRepository.findOne({
+      where: { id: payload.sub },
+    });
     if (!user) {
       throw new UnauthorizedException();
     }
     return user;
   }
 
-  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<{ message: string }> {
+  async verifyEmail(
+    verifyEmailDto: VerifyEmailDto,
+  ): Promise<{ message: string }> {
     // Basic implementation for now to fix controller errors
     const user = await this.userRepository.findOne({
       where: { emailVerificationToken: verifyEmailDto.token },
@@ -172,7 +201,10 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired verification token');
     }
 
-    if (user.emailVerificationTokenExpiry && user.emailVerificationTokenExpiry < new Date()) {
+    if (
+      user.emailVerificationTokenExpiry &&
+      user.emailVerificationTokenExpiry < new Date()
+    ) {
       throw new BadRequestException('Verification token has expired');
     }
 
@@ -184,7 +216,9 @@ export class AuthService {
     return { message: 'Email verified successfully' };
   }
 
-  async resendVerification(resendVerificationDto: ResendVerificationDto): Promise<{ message: string }> {
+  async resendVerification(
+    resendVerificationDto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({
       where: { email: resendVerificationDto.email },
     });
@@ -206,7 +240,10 @@ export class AuthService {
 
     // Always return success for security reasons
     if (!user) {
-      return { message: 'If an account with that email exists, a reset link has been sent' };
+      return {
+        message:
+          'If an account with that email exists, a reset link has been sent',
+      };
     }
 
     const selector = crypto.randomBytes(16).toString('hex');
@@ -223,28 +260,47 @@ export class AuthService {
 
     try {
       // @ts-ignore
-      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordResetEmail === 'function') {
+      if (
+        (this as any).emailService &&
+        typeof (this as any).emailService.sendPasswordResetEmail === 'function'
+      ) {
         // @ts-ignore
-        await (this as any).emailService.sendPasswordResetEmail(user.email, token, user.firstName);
+        await (this as any).emailService.sendPasswordResetEmail(
+          user.email,
+          token,
+          user.firstName,
+        );
       }
     } catch (err) {
       // do not reveal email failures
-      // eslint-disable-next-line no-console
+
       console.warn('Failed to send password reset email', err);
     }
 
-    return { message: 'If an account with that email exists, a reset link has been sent' };
+    return {
+      message:
+        'If an account with that email exists, a reset link has been sent',
+    };
   }
 
-  async resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  async resetPassword(
+    token: string,
+    newPassword: string,
+  ): Promise<{ message: string }> {
     const parts = token.split('.');
     if (parts.length !== 2) {
       throw new BadRequestException('Invalid token');
     }
 
     const [selector, validator] = parts;
-    const user = await this.userRepository.findOne({ where: { resetPasswordTokenSelector: selector } });
-    if (!user || !user.resetPasswordTokenHash || !user.resetPasswordTokenExpiry) {
+    const user = await this.userRepository.findOne({
+      where: { resetPasswordTokenSelector: selector },
+    });
+    if (
+      !user ||
+      !user.resetPasswordTokenHash ||
+      !user.resetPasswordTokenExpiry
+    ) {
       throw new BadRequestException('Invalid or expired token');
     }
 
@@ -252,7 +308,10 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired token');
     }
 
-    const isValid = await bcrypt.compare(validator, user.resetPasswordTokenHash);
+    const isValid = await bcrypt.compare(
+      validator,
+      user.resetPasswordTokenHash,
+    );
     if (!isValid) {
       throw new BadRequestException('Invalid or expired token');
     }
@@ -270,19 +329,28 @@ export class AuthService {
 
     try {
       // @ts-ignore
-      if ((this as any).emailService && typeof (this as any).emailService.sendPasswordChangedEmail === 'function') {
+      if (
+        (this as any).emailService &&
+        typeof (this as any).emailService.sendPasswordChangedEmail ===
+          'function'
+      ) {
         // @ts-ignore
-        await (this as any).emailService.sendPasswordChangedEmail(user.email, user.firstName);
+        await (this as any).emailService.sendPasswordChangedEmail(
+          user.email,
+          user.firstName,
+        );
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('Failed to send password changed email', err);
     }
 
     return { message: 'Password reset successfully' };
   }
 
-  async submitKYC(userId: string, submitDto: SubmitKYCDto): Promise<{ message: string }> {
+  async submitKYC(
+    userId: string,
+    submitDto: SubmitKYCDto,
+  ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -296,19 +364,27 @@ export class AuthService {
 
     try {
       // @ts-ignore
-      if ((this as any).emailService && typeof (this as any).emailService.sendKYCSubmittedEmail === 'function') {
+      if (
+        (this as any).emailService &&
+        typeof (this as any).emailService.sendKYCSubmittedEmail === 'function'
+      ) {
         // @ts-ignore
-        await (this as any).emailService.sendKYCSubmittedEmail(user.email, user.firstName);
+        await (this as any).emailService.sendKYCSubmittedEmail(
+          user.email,
+          user.firstName,
+        );
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('Failed to send KYC submitted email', err);
     }
 
     return { message: 'KYC documents submitted for review' };
   }
 
-  async updateKYCStatus(userId: string, updateDto: UpdateKYCDto): Promise<{ message: string }> {
+  async updateKYCStatus(
+    userId: string,
+    updateDto: UpdateKYCDto,
+  ): Promise<{ message: string }> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -328,7 +404,11 @@ export class AuthService {
 
     try {
       // @ts-ignore
-      if ((this as any).emailService && typeof (this as any).emailService.sendKYCStatusChangeEmail === 'function') {
+      if (
+        (this as any).emailService &&
+        typeof (this as any).emailService.sendKYCStatusChangeEmail ===
+          'function'
+      ) {
         // @ts-ignore
         await (this as any).emailService.sendKYCStatusChangeEmail(
           user.email,
@@ -338,7 +418,6 @@ export class AuthService {
         );
       }
     } catch (err) {
-      // eslint-disable-next-line no-console
       console.warn('Failed to send KYC status change email', err);
     }
 
@@ -353,21 +432,30 @@ export class AuthService {
       });
 
       // Find the user
-      const user = await this.userRepository.findOne({ where: { id: payload.sub } });
+      const user = await this.userRepository.findOne({
+        where: { id: payload.sub },
+      });
       if (!user) {
         throw new UnauthorizedException('Invalid refresh token');
       }
 
       // Check if the refresh token hash matches (token rotation)
       if (!user.refreshTokenHash) {
-        this.logger.warn(`User ${user.id} attempted to use refresh token but no hash stored`);
+        this.logger.warn(
+          `User ${user.id} attempted to use refresh token but no hash stored`,
+        );
         throw new UnauthorizedException('Invalid refresh token');
       }
 
-      const isTokenValid = await bcrypt.compare(refreshTokenDto.refreshToken, user.refreshTokenHash);
+      const isTokenValid = await bcrypt.compare(
+        refreshTokenDto.refreshToken,
+        user.refreshTokenHash,
+      );
       if (!isTokenValid) {
         // Possible token reuse attack - invalidate all tokens for this user
-        this.logger.warn(`Possible token reuse attack detected for user ${user.id}`);
+        this.logger.warn(
+          `Possible token reuse attack detected for user ${user.id}`,
+        );
         user.refreshTokenHash = null;
         await this.userRepository.save(user);
         throw new UnauthorizedException('Invalid refresh token');
@@ -382,7 +470,10 @@ export class AuthService {
 
       return newTokens;
     } catch (error) {
-      if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+      if (
+        error.name === 'JsonWebTokenError' ||
+        error.name === 'TokenExpiredError'
+      ) {
         throw new UnauthorizedException('Invalid or expired refresh token');
       }
       throw error;

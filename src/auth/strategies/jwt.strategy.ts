@@ -10,9 +10,9 @@ export const JWT_STRATEGY = 'jwt';
 export class JwtStrategy extends PassportStrategy(Strategy, JWT_STRATEGY) {
   constructor(private configService: ConfigService) {
     super({
-      jwtFromRequest:   ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,   // expired tokens → 401 before validate() is called
-      secretOrKey:      configService.getOrThrow<string>('jwtSecret'),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false, // expired tokens → 401 before validate() is called
+      secretOrKey: configService.getOrThrow<string>('jwtSecret'),
     });
   }
 

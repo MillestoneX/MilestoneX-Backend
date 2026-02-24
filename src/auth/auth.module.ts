@@ -22,10 +22,10 @@ import { JwtAuthGuard } from './guard/jwt-auth.guard';
     PassportModule,
     TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
-      imports:    [ConfigModule],
-      inject:     [ConfigService],
+      imports: [ConfigModule],
+      inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret:      config.getOrThrow<string>('jwtSecret'),
+        secret: config.getOrThrow<string>('jwtSecret'),
         signOptions: {
           expiresIn: '15m',
         },

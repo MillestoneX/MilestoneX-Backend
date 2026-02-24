@@ -1,4 +1,10 @@
-import { IsString, IsOptional, IsUrl, MaxLength, Matches } from 'class-validator';
+import {
+  IsString,
+  IsOptional,
+  IsUrl,
+  MaxLength,
+  Matches,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class UpdateUserDto {
@@ -58,6 +64,8 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsString()
-  @Matches(/^G[A-Z2-7]{55}$/, { message: 'walletAddress must be a valid Stellar public key' })
+  @Matches(/^G[A-Z2-7]{55}$/, {
+    message: 'walletAddress must be a valid Stellar public key',
+  })
   walletAddress?: string;
 }

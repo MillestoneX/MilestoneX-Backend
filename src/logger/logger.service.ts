@@ -11,7 +11,8 @@ export class LoggerService implements OnModuleDestroy {
 
   constructor() {
     const env = process.env.NODE_ENV || 'development';
-    const level = process.env.LOG_LEVEL || (env === 'production' ? 'info' : 'debug');
+    const level =
+      process.env.LOG_LEVEL || (env === 'production' ? 'info' : 'debug');
     this.currentDate = this.getDateStr();
 
     const logsDir = process.env.LOG_DIR || join(process.cwd(), 'logs');

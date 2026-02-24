@@ -20,7 +20,9 @@ export class Donation {
   @Column()
   projectId: string;
 
-  @ManyToOne(() => Project, (project) => project.donations, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Project, (project) => project.donations, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'projectId' })
   project: Project;
 
