@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   Index,
+  DeleteDateColumn,
 } from 'typeorm';
 
 export enum UserRole {
@@ -104,4 +105,7 @@ export class User {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 }
