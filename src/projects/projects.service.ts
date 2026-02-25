@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Project, ProjectStatus } from './entities/project.entity';
@@ -6,13 +6,47 @@ import {
   GetProjectsQueryDto,
   ProjectSortBy,
 } from './dtos/get-projects-query.dto';
+import { CreateProjectDto } from './dtos/create-project.dto';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
-  ) {}
+  ) { }
+
+  async create(
+    createProjectDto: CreateProjectDto,
+    creatorId: string,
+  ): Promise<Project> {
+    const { projectName, projectDesc, projectImage, fundingGoal, deadline, category } =
+      createProjectDto;
+
+    // Validate that the deadline is in the future
+    const deadlineDate = new Date(deadline);
+    if (isNaN(deadlineDate.getTime())) {
+      throw new BadRequestException('Deadline must be a valid date');
+    }
+    if (deadlineDate <= new Date()) {
+      throw new BadRequestException('Deadline must be a future date');
+    }
+
+    const project = this.projectRepository.create({
+      title: projectName,
+      description: projectDesc,
+      imageUrl: projectImage,
+      goalAmount: fundingGoal,
+      deadline: deadlineDate,
+      status: ProjectStatus.PENDING,
+      progress: 0,
+      donationCount: 0,
+      fundsRaised: 0,
+      creatorId,
+      ...(category && { category }),
+    });
+
+    return this.projectRepository.save(project);
+  }
 
   async findAll(
     query: GetProjectsQueryDto,

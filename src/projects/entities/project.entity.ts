@@ -68,6 +68,12 @@ export class Project {
   @Column({ type: 'decimal', precision: 18, scale: 7, default: 0 })
   fundsRaised: number;
 
+  @Column({ type: 'decimal', precision: 5, scale: 2, default: 0 })
+  progress: number;
+
+  @Column({ type: 'int', default: 0 })
+  donationCount: number;
+
   @Column({ nullable: true, type: 'timestamp' })
   deadline: Date | null;
 
