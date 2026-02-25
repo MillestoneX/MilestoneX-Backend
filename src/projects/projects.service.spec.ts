@@ -3,6 +3,7 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { ProjectsService } from './projects.service';
 import { Project, ProjectStatus, ProjectCategory } from './entities/project.entity';
+import { Donation } from './entities/donation.entity';
 import { GetProjectsQueryDto, ProjectSortBy } from './dtos/get-projects-query.dto';
 
 describe('ProjectsService', () => {
@@ -27,6 +28,10 @@ describe('ProjectsService', () => {
     createQueryBuilder: jest.fn().mockReturnValue(mockQueryBuilder),
   };
 
+  const mockDonationRepository = {
+    createQueryBuilder: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -34,6 +39,10 @@ describe('ProjectsService', () => {
         {
           provide: getRepositoryToken(Project),
           useValue: mockRepository,
+        },
+        {
+          provide: getRepositoryToken(Donation),
+          useValue: mockDonationRepository,
         },
       ],
     }).compile();

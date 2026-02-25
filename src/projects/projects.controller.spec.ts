@@ -11,6 +11,7 @@ describe('ProjectsController', () => {
   // Mock ProjectsService
   const mockProjectsService = {
     findAll: jest.fn(),
+    findOnePublic: jest.fn(),
   };
 
   // Mock project data
@@ -501,6 +502,42 @@ describe('ProjectsController', () => {
 
         expect(result.data).toEqual(projectsWithMissingFields);
       });
+    });
+  });
+
+  describe('findOne', () => {
+    it('should return detailed project by id', async () => {
+      const projectId = '550e8400-e29b-41d4-a716-446655440001';
+      const detailedProject = {
+        ...mockProjects[0],
+        donationSummary: {
+          totalDonations: 2,
+          totalAmount: 5000,
+          uniqueDonors: 2,
+        },
+        progressPercentage: 50,
+        recentDonations: [],
+      };
+
+      mockProjectsService.findOnePublic.mockResolvedValue(detailedProject);
+
+      const result = await controller.findOne(projectId);
+
+      expect(result).toEqual(detailedProject);
+      expect(service.findOnePublic).toHaveBeenCalledWith(projectId);
+      expect(service.findOnePublic).toHaveBeenCalledTimes(1);
+    });
+
+    it('should propagate not found error', async () => {
+      const projectId = 'non-existent-id';
+      const error = new Error('Project not found');
+
+      mockProjectsService.findOnePublic.mockRejectedValue(error);
+
+      await expect(controller.findOne(projectId)).rejects.toThrow(
+        'Project not found',
+      );
+      expect(service.findOnePublic).toHaveBeenCalledWith(projectId);
     });
   });
 });

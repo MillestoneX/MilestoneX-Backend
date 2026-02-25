@@ -1,4 +1,11 @@
-import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+  Param,
+} from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ProjectsService } from './projects.service';
 import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
@@ -22,5 +29,15 @@ export class ProjectsController {
       limit: query.limit ?? 10,
       offset: query.offset ?? 0,
     };
+  }
+
+  @Public()
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get detailed project by ID' })
+  @ApiResponse({ status: 200, description: 'Project details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async findOne(@Param('id') id: string) {
+    return this.projectsService.findOnePublic(id);
   }
 }
