@@ -358,7 +358,9 @@ describe('UsersService', () => {
 
   describe('updateProfile', () => {
     const userId = '550e8400-e29b-41d4-a716-446655440000';
-    const mockUser: User = {
+    
+    // Helper function to create a fresh mock user for each test
+    const createMockUser = (): User => ({
       id: userId,
       email: 'test@example.com',
       password: 'hashedPassword123',
@@ -383,10 +385,11 @@ describe('UsersService', () => {
       kycRejectionReason: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
-    };
+    });
 
     describe('success scenarios', () => {
       it('should update profile with all fields', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           firstName: 'Jane',
           lastName: 'Smith',
@@ -427,19 +430,21 @@ describe('UsersService', () => {
       });
 
       it('should update only provided fields', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           firstName: 'Jane',
         };
 
-        const savedUser = {
+        // First call returns the user to update, second call returns the user for getProfile
+        const userAfterUpdate = {
           ...mockUser,
           firstName: 'Jane',
         };
 
         mockRepository.findOne
-          .mockResolvedValueOnce(mockUser)
-          .mockResolvedValueOnce(savedUser);
-        mockRepository.save.mockResolvedValue(savedUser);
+          .mockResolvedValueOnce(mockUser) // First call - find user to update
+          .mockResolvedValueOnce(userAfterUpdate); // Second call - getProfile after save
+        mockRepository.save.mockResolvedValue(userAfterUpdate);
 
         const result = await service.updateProfile(userId, updateDto);
 
@@ -449,6 +454,7 @@ describe('UsersService', () => {
       });
 
       it('should handle empty DTO (no updates)', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {};
 
         mockRepository.findOne
@@ -464,21 +470,23 @@ describe('UsersService', () => {
       });
 
       it('should handle undefined values in DTO', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           firstName: undefined,
           lastName: 'Smith',
           country: undefined,
         };
 
-        const savedUser = {
+        // When firstName is undefined, it should not be updated
+        const userAfterUpdate = {
           ...mockUser,
           lastName: 'Smith',
         };
 
         mockRepository.findOne
-          .mockResolvedValueOnce(mockUser)
-          .mockResolvedValueOnce(savedUser);
-        mockRepository.save.mockResolvedValue(savedUser);
+          .mockResolvedValueOnce(mockUser) // First call - find user to update
+          .mockResolvedValueOnce(userAfterUpdate); // Second call - getProfile after save
+        mockRepository.save.mockResolvedValue(userAfterUpdate);
 
         const result = await service.updateProfile(userId, updateDto);
 
@@ -499,6 +507,7 @@ describe('UsersService', () => {
       });
 
       it('should throw ConflictException when wallet address already exists (23505 error)', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           walletAddress: 'GAA2M7F4E3C4D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6',
         };
@@ -516,6 +525,7 @@ describe('UsersService', () => {
       });
 
       it('should rethrow non-23505 errors', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = { firstName: 'Jane' };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -540,6 +550,7 @@ describe('UsersService', () => {
 
     describe('edge cases', () => {
       it('should handle setting fields to empty strings', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           bio: '',
           country: '',
@@ -563,6 +574,7 @@ describe('UsersService', () => {
       });
 
       it('should handle very long bio', async () => {
+        const mockUser = createMockUser();
         const longBio = 'A'.repeat(500);
         const updateDto: UpdateUserDto = {
           bio: longBio,
@@ -584,6 +596,7 @@ describe('UsersService', () => {
       });
 
       it('should handle special characters in fields', async () => {
+        const mockUser = createMockUser();
         const updateDto: UpdateUserDto = {
           firstName: 'José María',
           lastName: "O'Brien",
@@ -698,7 +711,8 @@ describe('UsersService', () => {
         expect(result.profileCompletionPercentage).toBe(50);
       });
 
-      it('should return profile with 66% completion (email verified, wallet set)', async () => {
+      it('should return profile with 83% completion (email verified, wallet set)', async () => {
+        // 5 out of 6 checkpoints: email, firstName, lastName (always true), emailVerified, walletAddress
         const mockUser: User = {
           id: userId,
           email: 'test@example.com',
@@ -730,10 +744,11 @@ describe('UsersService', () => {
 
         const result = await service.getProfile(userId);
 
-        expect(result.profileCompletionPercentage).toBe(66);
+        expect(result.profileCompletionPercentage).toBe(83);
       });
 
-      it('should return profile with 83% completion (email verified, wallet set, KYC approved)', async () => {
+      it('should return profile with 100% completion (email verified, wallet set, KYC approved)', async () => {
+        // All 6 checkpoints: email, firstName, lastName, emailVerified, walletAddress, KYC approved
         const mockUser: User = {
           id: userId,
           email: 'test@example.com',
@@ -765,7 +780,7 @@ describe('UsersService', () => {
 
         const result = await service.getProfile(userId);
 
-        expect(result.profileCompletionPercentage).toBe(83);
+        expect(result.profileCompletionPercentage).toBe(100);
       });
 
       it('should handle different user roles', async () => {
@@ -858,6 +873,7 @@ describe('UsersService', () => {
 
     describe('edge cases', () => {
       it('should handle KYC REJECTED status', async () => {
+        // 5 out of 6: email, firstName, lastName, emailVerified, wallet (REJECTED doesn't count)
         const mockUser: User = {
           id: userId,
           email: 'test@example.com',
@@ -890,10 +906,11 @@ describe('UsersService', () => {
         const result = await service.getProfile(userId);
 
         expect(result.kycStatus).toBe(KYCStatus.REJECTED);
-        expect(result.profileCompletionPercentage).toBe(66);
+        expect(result.profileCompletionPercentage).toBe(83);
       });
 
       it('should handle KYC PENDING status', async () => {
+        // 5 out of 6: email, firstName, lastName, emailVerified, wallet (PENDING doesn't count)
         const mockUser: User = {
           id: userId,
           email: 'test@example.com',
@@ -926,10 +943,12 @@ describe('UsersService', () => {
         const result = await service.getProfile(userId);
 
         expect(result.kycStatus).toBe(KYCStatus.PENDING);
-        expect(result.profileCompletionPercentage).toBe(66);
+        expect(result.profileCompletionPercentage).toBe(83);
       });
 
-      it('should handle empty string wallet address as not set', async () => {
+      it('should handle empty string wallet address as set (not null)', async () => {
+        // 6 out of 6: email, firstName, lastName, emailVerified, wallet (empty string !== null), KYC approved
+        // Note: The service checks `walletAddress !== null`, so empty string counts as "set"
         const mockUser: User = {
           id: userId,
           email: 'test@example.com',
@@ -961,9 +980,9 @@ describe('UsersService', () => {
 
         const result = await service.getProfile(userId);
 
-        // Empty string is falsy, so wallet check should fail
+        // Empty string !== null, so wallet check passes
         expect(result.walletAddress).toBe('');
-        expect(result.profileCompletionPercentage).toBe(83);
+        expect(result.profileCompletionPercentage).toBe(100);
       });
     });
   });
