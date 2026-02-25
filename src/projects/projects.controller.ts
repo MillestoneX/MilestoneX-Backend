@@ -1,6 +1,12 @@
 import {
   Controller,
   Get,
+  HttpCode,
+  HttpStatus,
+  Query,
+  Param,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
   Post,
   Body,
   HttpCode,
@@ -44,6 +50,14 @@ export class ProjectsController {
     };
   }
 
+  @Public()
+  @Get(':id')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get detailed project by ID' })
+  @ApiResponse({ status: 200, description: 'Project details retrieved successfully' })
+  @ApiResponse({ status: 404, description: 'Project not found' })
+  async findOne(@Param('id') id: string) {
+    return this.projectsService.findOnePublic(id);
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CREATOR)
