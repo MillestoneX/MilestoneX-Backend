@@ -1,3 +1,5 @@
+import { KYCStatus } from 'src/common/enums/kyc-status.enum';
+import { UserRole } from 'src/common/enums/user-role.enum';
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,20 +9,6 @@ import {
   Index,
   DeleteDateColumn,
 } from 'typeorm';
-
-export enum UserRole {
-  USER = 'user',
-  ADMIN = 'admin',
-  CREATOR = 'creator',
-  DONOR = 'donor',
-}
-
-export enum KYCStatus {
-  NONE = 'none',
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  REJECTED = 'rejected',
-}
 
 @Entity('users')
 @Index('IDX_users_email', ['email'])

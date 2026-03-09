@@ -11,26 +11,8 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Donation } from './donation.entity';
-
-export enum ProjectStatus {
-  DRAFT = 'draft',
-  PENDING = 'pending',
-  APPROVED = 'approved',
-  ACTIVE = 'active',
-  COMPLETED = 'completed',
-  REJECTED = 'rejected',
-}
-
-export enum ProjectCategory {
-  HEALTH = 'health',
-  EDUCATION = 'education',
-  DISASTER_RELIEF = 'disaster_relief',
-  ENVIRONMENT = 'environment',
-  COMMUNITY = 'community',
-  TECHNOLOGY = 'technology',
-  ARTS = 'arts',
-  OTHER = 'other',
-}
+import { ProjectCategory } from 'src/common/enums/project-category.enum';
+import { ProjectStatus } from 'src/common/enums/project-status.enum';
 
 @Entity('projects')
 @Index('IDX_projects_creator_id', ['creatorId'])

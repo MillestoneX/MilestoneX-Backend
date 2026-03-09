@@ -19,10 +19,10 @@ import {
 } from '@nestjs/swagger';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { UserRole } from './entities/user.entity';
-import { UsersService } from './users.service';
-import { AdminGetUsersQueryDto } from './dtos/admin-get-users-query.dto';
-import { UpdateUserRoleDto } from './dtos/update-user-role.dto';
+import { AdminGetUsersQueryDto } from './dto/admin-get-users-query.dto';
+import { UpdateUserRoleDto } from './dto/update-user-role.dto';
+import { UserRole } from 'src/common/enums/user-role.enum';
+import { UsersService } from './providers/users.service';
 
 @ApiTags('Users')
 @ApiBearerAuth('JWT-auth')

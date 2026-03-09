@@ -20,13 +20,13 @@ import {
   ApiUnauthorizedResponse,
   ApiNotFoundResponse,
 } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
-import { RegisterDto } from './dtos/register.dto';
-import { LoginDto } from './dtos/login.dto';
-import { VerifyEmailDto } from './dtos/verify-email.dto';
-import { ResendVerificationDto } from './dtos/resend-verification.dto';
-import { RefreshTokenDto } from './dtos/refresh-token.dto';
-import { AuthResponseDto } from './dtos/auth-response.dto';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { ResendVerificationDto } from './dto/resend-verification.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { AuthResponseDto } from './dto/auth-response.dto';
+import { AuthService } from './providers/auth.service';
 
 @ApiTags('auth')
 @ApiBearerAuth()
@@ -34,6 +34,7 @@ import { AuthResponseDto } from './dtos/auth-response.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  //_____________________Endpoint to register a new user
   @Post('register')
   @ApiOperation({ summary: 'Register a new user' })
   @ApiCreatedResponse({
@@ -47,6 +48,7 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
+  //_________________________ Endpoint to login with email and password
   @Post('login')
   @ApiOperation({ summary: 'Login with email and password' })
   @ApiOkResponse({
@@ -63,8 +65,9 @@ export class AuthController {
     return this.authService.login(loginDto, req);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  //_________________________ Endpoint to get current user profile (JWT required)
   @Get('profile')
+  @UseGuards(AuthGuard('jwt'))
   @ApiOperation({ summary: 'Get current user profile (JWT required)' })
   @ApiOkResponse({
     description: 'Profile retrieved successfully',
@@ -77,6 +80,7 @@ export class AuthController {
     return req.user;
   }
 
+  //_________________________ Endpoint to verify email with token
   @Post('verify-email')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify email with token' })
@@ -92,6 +96,7 @@ export class AuthController {
     return this.authService.verifyEmail(verifyEmailDto);
   }
 
+  //_________________________ Endpoint to resend email verification
   @Post('resend-verification')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Resend email verification' })
@@ -107,6 +112,7 @@ export class AuthController {
     return this.authService.resendVerification(resendVerificationDto);
   }
 
+  //_________________________ Endpoint to refresh access token using refresh token (token rotation)
   @Post('refresh')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Refresh access token' })
