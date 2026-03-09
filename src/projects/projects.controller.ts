@@ -22,14 +22,14 @@ import {
   ApiNotFoundResponse,
   ApiForbiddenResponse,
 } from '@nestjs/swagger';
-import { ProjectsService } from './projects.service';
-import { GetProjectsQueryDto } from './dtos/get-projects-query.dto';
-import { CreateProjectDto } from './dtos/create-project.dto';
-import { Public } from '../auth/decorators/public.decorator';
-import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
+import { GetProjectsQueryDto } from './dto/get-projects-query.dto';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { Public } from '../common/decorators/public.decorator';
+import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import { UserRole } from '../users/entities/user.entity';
+import { UserRole } from 'src/common/enums/user-role.enum';
+import { ProjectsService } from './providers/projects.service';
 
 @ApiTags('projects')
 @ApiBearerAuth()
@@ -37,8 +37,10 @@ import { UserRole } from '../users/entities/user.entity';
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
-  @Public()
+  //______________________ Endpoint to create a new project (CREATOR role required)
   @Get()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.CREATOR)
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get all projects with filtering and pagination' })
   @ApiOkResponse({ description: 'Projects retrieved successfully' })
@@ -52,8 +54,9 @@ export class ProjectsController {
     };
   }
 
-  @Public()
+  //_____________________ Endpoint to get detailed project info by ID (public view)
   @Get(':id')
+  @Public()
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Get detailed project by ID' })
   @ApiOkResponse({ description: 'Project details retrieved successfully' })
@@ -62,6 +65,7 @@ export class ProjectsController {
     return this.projectsService.findOnePublic(id);
   }
 
+  //_____________________ Endpoint to create a new project (CREATOR role required)
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CREATOR)

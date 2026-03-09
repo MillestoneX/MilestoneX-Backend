@@ -1,14 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { UsersService } from '../../src/users/users.service';
-import {
-  User,
-  UserRole,
-  KYCStatus,
-} from '../../src/users/entities/user.entity';
-import { UpdateUserDto } from '../../src/users/dtos/update-user.dto';
+
+import { UpdateUserDto } from '../../src/users/dto/update-user.dto';
 import { NotFoundException, ConflictException } from '@nestjs/common';
+import { UsersService } from 'src/users/providers/users.service';
+import { User } from 'src/users/entities/user.entity';
+import { UserRole } from 'src/common/enums/user-role.enum';
+import { KYCStatus } from 'src/common/enums/kyc-status.enum';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -69,6 +68,7 @@ describe('UsersService', () => {
       kycRejectionReason: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-15'),
+      deletedAt: null,
     };
 
     describe('success scenarios', () => {
@@ -96,6 +96,7 @@ describe('UsersService', () => {
           kycSubmittedAt: null,
           kycVerifiedAt: null,
           kycDocumentUrl: null,
+          deletedAt: null,
         };
         mockRepository.findOne.mockResolvedValue(minimalUser);
 
@@ -178,6 +179,7 @@ describe('UsersService', () => {
       kycRejectionReason: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
+      deletedAt: null,
     };
 
     describe('success scenarios', () => {
@@ -280,6 +282,7 @@ describe('UsersService', () => {
       kycRejectionReason: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
+      deletedAt: null,
     };
 
     describe('success scenarios', () => {
@@ -307,6 +310,7 @@ describe('UsersService', () => {
           ...mockUser,
           walletAddress:
             'GAA2M7F4E3C4D4E5F6G7H8I9J0K1L2M3N4O5P6Q7R8S9T0U1V2W3X4Y5Z6',
+          deletedAt: null,
         };
         const newWalletAddress =
           'GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQ5G3LKYVW4R6IGPCBQVZB';
@@ -399,6 +403,7 @@ describe('UsersService', () => {
       kycRejectionReason: null,
       createdAt: new Date('2024-01-01'),
       updatedAt: new Date('2024-01-01'),
+      deletedAt: null,
     });
 
     describe('success scenarios', () => {
@@ -669,6 +674,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-15'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -719,6 +725,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -756,6 +763,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -793,6 +801,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -828,6 +837,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -863,6 +873,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -921,6 +932,7 @@ describe('UsersService', () => {
           kycRejectionReason: 'Document unclear',
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -959,6 +971,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);
@@ -997,6 +1010,7 @@ describe('UsersService', () => {
           kycRejectionReason: null,
           createdAt: new Date('2024-01-01'),
           updatedAt: new Date('2024-01-01'),
+          deletedAt: null,
         };
 
         mockRepository.findOne.mockResolvedValue(mockUser);

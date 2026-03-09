@@ -19,18 +19,18 @@ import {
   ApiBearerAuth,
   ApiParam,
 } from '@nestjs/swagger';
-import { AuthService } from '../auth/auth.service';
-import { UsersService } from './users.service';
-import { ChangePasswordDto } from './dtos/change-password.dto';
-import { ForgotPasswordDto } from './dtos/forgot-password.dto';
-import { ResetPasswordDto } from './dtos/reset-password.dto';
-import { SubmitKYCDto } from './dtos/submit-kyc.dto';
-import { UpdateKYCDto } from './dtos/update-kyc.dto';
-import { UpdateUserDto } from './dtos/update-user.dto';
-import { Public } from '../auth/decorators/public.decorator';
-import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { UserRole } from './entities/user.entity';
-import type { JwtPayload } from '../auth/interfaces/auth.interface';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { SubmitKYCDto } from './dto/submit-kyc.dto';
+import { UpdateKYCDto } from './dto/update-kyc.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { Public } from '../common/decorators/public.decorator';
+import type { JwtPayload } from '../common/interfaces/auth.interface';
+import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { UserRole } from 'src/common/enums/user-role.enum';
+import { AuthService } from 'src/auth/providers/auth.service';
+import { UsersService } from './providers/users.service';
 
 @ApiTags('Users')
 @Controller('users')
