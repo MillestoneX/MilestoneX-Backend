@@ -36,7 +36,7 @@
     "@types/uuid": "^10.0.0",
     "bcrypt": "^5.1.1",
     "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3",
+    "class-validator": "^0.14.4",
     "ejs": "^4.0.1",
     "joi": "^18.0.2",
     "multer": "^2.1.1",
