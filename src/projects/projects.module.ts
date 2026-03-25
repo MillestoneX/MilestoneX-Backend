@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { MulterModule } from '@nestjs/platform-express';
 import { Project } from './entities/project.entity';
-import { Donation } from './entities/donation.entity';
+import { Donation } from '../donations/entities/donation.entity';
 import { ProjectHistory } from './entities/project-history.entity';
 import { ProjectImage } from './entities/project-image.entity';
 import { User } from '../users/entities/user.entity';

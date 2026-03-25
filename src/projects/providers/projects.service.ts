@@ -10,7 +10,7 @@ import { ProjectStatus } from 'src/common/enums/project-status.enum';
 import { ProjectSortBy } from 'src/common/enums/projects-sortBy.enum';
 import { Project } from '../entities/project.entity';
 import { ProjectHistory } from '../entities/project-history.entity';
-import { Donation } from '../entities/donation.entity';
+import { Donation } from '../../donations/entities/donation.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { GetProjectsQueryDto } from '../dto/get-projects-query.dto';
 import { UpdateProjectStatusDto } from '../dto/update-project-status.dto';

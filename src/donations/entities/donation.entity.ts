@@ -6,13 +6,15 @@ import {
   ManyToOne,
   JoinColumn,
   Index,
+  Unique,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Project } from './project.entity';
+import { Project } from '../../projects/entities/project.entity';
 
 @Entity('donations')
 @Index('IDX_donations_project_id', ['projectId'])
-@Index('IDX_donations_donor_id', ['donorId'])
+@Index('IDX_donations_transaction_hash', ['transactionHash'])
+@Unique('UQ_donations_transaction_hash', ['transactionHash'])
 export class Donation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -36,7 +38,10 @@ export class Donation {
   @Column({ type: 'decimal', precision: 18, scale: 7 })
   amount: number;
 
-  @Column({ nullable: true })
+  @Column({ default: 'XLM' })
+  assetType: string;
+
+  @Column({ nullable: true, unique: true })
   transactionHash: string | null;
 
   @Column({ default: false })
