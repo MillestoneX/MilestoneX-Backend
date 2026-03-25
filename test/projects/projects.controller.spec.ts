@@ -6,7 +6,9 @@ import { GetProjectsQueryDto } from 'src/projects/dto/get-projects-query.dto';
 import { Project } from 'src/projects/entities/project.entity';
 import { ProjectsController } from 'src/projects/projects.controller';
 import { ProjectsService } from 'src/projects/providers/projects.service';
+import { ImageUploadService } from 'src/projects/services/image-upload.service';
 import { SearchService } from 'src/projects/services/search.service';
+import { AnalyticsService } from 'src/projects/services/analytics.service';
 
 describe('ProjectsController', () => {
   let controller: ProjectsController;
@@ -16,12 +18,26 @@ describe('ProjectsController', () => {
   const mockProjectsService = {
     findAll: jest.fn(),
     findOnePublic: jest.fn(),
+    updateStatus: jest.fn(),
+  };
+
+  // Mock ImageUploadService
+  const mockImageUploadService = {
+    uploadImages: jest.fn(),
+    getProjectImages: jest.fn(),
+    deleteImage: jest.fn(),
   };
 
   // Mock SearchService
   const mockSearchService = {
     searchProjects: jest.fn(),
     getSearchAnalytics: jest.fn(),
+  };
+
+  // Mock AnalyticsService
+  const mockAnalyticsService = {
+    getProjectAnalytics: jest.fn(),
+    getCreatorAnalytics: jest.fn(),
   };
 
   // Mock project data
@@ -77,8 +93,16 @@ describe('ProjectsController', () => {
           useValue: mockProjectsService,
         },
         {
+          provide: ImageUploadService,
+          useValue: mockImageUploadService,
+        },
+        {
           provide: SearchService,
           useValue: mockSearchService,
+        },
+        {
+          provide: AnalyticsService,
+          useValue: mockAnalyticsService,
         },
       ],
     }).compile();
@@ -306,6 +330,117 @@ describe('ProjectsController', () => {
         mockSearchService.getSearchAnalytics.mockRejectedValue(error);
 
         await expect(controller.getSearchAnalytics()).rejects.toThrow('Analytics service error');
+      });
+    });
+  });
+
+  describe('getProjectAnalytics', () => {
+    describe('success scenarios', () => {
+      it('should return project analytics', async () => {
+        const projectId = '550e8400-e29b-41d4-a716-446655440001';
+        const query = { startDate: '2024-01-01', endDate: '2024-12-31' };
+        const expectedAnalytics = {
+          project: {
+            id: projectId,
+            title: 'Education Fund',
+            status: ProjectStatus.ACTIVE,
+            goalAmount: 10000,
+            fundsRaised: 5000,
+            progress: 50,
+            deadline: new Date('2024-12-31'),
+          },
+          period: {
+            startDate: '2024-01-01',
+            endDate: '2024-12-31',
+            granularity: 'daily',
+          },
+          totalStats: {
+            totalDonations: 10,
+            totalAmount: 5000,
+            uniqueDonors: 8,
+            averageDonation: 500,
+            maxDonation: 1000,
+            minDonation: 100,
+          },
+          donationTrends: [],
+          topDonors: [],
+          fundingVelocity: [],
+        };
+
+        mockAnalyticsService.getProjectAnalytics.mockResolvedValue(expectedAnalytics);
+
+        const result = await controller.getProjectAnalytics(projectId, query, {
+          user: { sub: 'user-id', role: 'creator' },
+        } as any);
+
+        expect(result).toEqual(expectedAnalytics);
+        expect(mockAnalyticsService.getProjectAnalytics).toHaveBeenCalledWith(
+          projectId,
+          'user-id',
+          'creator',
+          query,
+        );
+      });
+    });
+
+    describe('error scenarios', () => {
+      it('should handle analytics service errors', async () => {
+        const projectId = '550e8400-e29b-41d4-a716-446655440001';
+        const query = {};
+        const error = new Error('Analytics service error');
+
+        mockAnalyticsService.getProjectAnalytics.mockRejectedValue(error);
+
+        await expect(
+          controller.getProjectAnalytics(projectId, query, {
+            user: { sub: 'user-id', role: 'creator' },
+          } as any),
+        ).rejects.toThrow('Analytics service error');
+      });
+    });
+  });
+
+  describe('getCreatorAnalytics', () => {
+    describe('success scenarios', () => {
+      it('should return creator analytics', async () => {
+        const query = { startDate: '2024-01-01', endDate: '2024-12-31' };
+        const expectedAnalytics = {
+          period: {
+            startDate: '2024-01-01',
+            endDate: '2024-12-31',
+            granularity: 'daily',
+          },
+          overallStats: {
+            totalDonations: 50,
+            totalAmount: 25000,
+            uniqueDonors: 30,
+            activeProjects: 3,
+            totalProjects: 5,
+          },
+          projectPerformance: [],
+        };
+
+        mockAnalyticsService.getCreatorAnalytics.mockResolvedValue(expectedAnalytics);
+
+        const result = await controller.getCreatorAnalytics(query, {
+          user: { sub: 'creator-id' },
+        } as any);
+
+        expect(result).toEqual(expectedAnalytics);
+        expect(mockAnalyticsService.getCreatorAnalytics).toHaveBeenCalledWith('creator-id', query);
+      });
+    });
+
+    describe('error scenarios', () => {
+      it('should handle creator analytics service errors', async () => {
+        const query = {};
+        const error = new Error('Creator analytics service error');
+
+        mockAnalyticsService.getCreatorAnalytics.mockRejectedValue(error);
+
+        await expect(
+          controller.getCreatorAnalytics(query, { user: { sub: 'creator-id' } } as any),
+        ).rejects.toThrow('Creator analytics service error');
       });
     });
   });
