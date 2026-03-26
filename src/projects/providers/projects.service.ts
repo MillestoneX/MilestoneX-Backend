@@ -14,8 +14,10 @@ import { ProjectHistory } from '../entities/project-history.entity';
 import { Donation } from '../../donations/entities/donation.entity';
 import { User } from '../../users/entities/user.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
+import { UpdateProjectDto } from '../dto/update-project.dto';
 import { GetProjectsQueryDto } from '../dto/get-projects-query.dto';
 import { UpdateProjectStatusDto } from '../dto/update-project-status.dto';
+import { UserRole } from 'src/common/enums/user-role.enum';
 import { AdminUpdateProjectStatusDto } from '../dto/admin-update-project.dto';
 import { MailService } from '../../mail/mail.service';
 import * as fs from 'fs';
@@ -343,6 +345,73 @@ export class ProjectsService {
     return project.status === ProjectStatus.ACTIVE;
   }
 
+  // update project details (creator or admin only)
+  public async update(
+    id: string,
+    updateProjectDto: UpdateProjectDto,
+    userId: string,
+    userRole: string,
+  ): Promise<Project> {
+    // 1. Fetch project with creator info
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['creator'],
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // 2. Check authorization - must be creator or admin
+    const isCreator = project.creatorId === userId;
+    const isAdmin = userRole === UserRole.ADMIN;
+
+    if (!isCreator && !isAdmin) {
+      throw new ForbiddenException('Only project creator or admin can update project');
+    }
+
+    // 3. Prevent updates to completed or rejected projects
+    if (project.status === ProjectStatus.COMPLETED) {
+      throw new BadRequestException('Cannot update a completed project');
+    }
+
+    if (project.status === ProjectStatus.REJECTED) {
+      throw new BadRequestException('Cannot update a rejected project');
+    }
+
+    // 4. Allow only specific fields to be updated
+    if (updateProjectDto.projectName) {
+      project.title = updateProjectDto.projectName;
+    }
+
+    if (updateProjectDto.projectDesc) {
+      project.description = updateProjectDto.projectDesc;
+    }
+
+    if (updateProjectDto.projectImage) {
+      project.imageUrl = updateProjectDto.projectImage;
+    }
+
+    if (updateProjectDto.category) {
+      project.category = updateProjectDto.category;
+    }
+
+    // Note: Story field would require a migration to add to Project entity
+    // For now, it's omitted but can be added by extending the entity
+
+    // 5. Prevent updates to critical fields (goal, deadline) - they can only be changed by admin
+    // These fields are intentionally not updatable in this endpoint
+
+    try {
+      // 6. Save and return updated project
+      const updatedProject = await this.projectRepository.save(project);
+      return updatedProject;
+    } catch (error) {
+      this.logger.error('Error updating project:', error);
+      throw new BadRequestException('Failed to update project');
+    }
+  }
+
   // admin approve project
   public async approveProject(
     id: string,
@@ -546,3 +615,4 @@ export class ProjectsService {
     );
   }
 }
+
