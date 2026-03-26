@@ -353,12 +353,6 @@ export class ProjectsService {
     userRole: string,
   ): Promise<Project> {
     // 1. Fetch project with creator info
-  // admin approve project
-  public async approveProject(
-    id: string,
-    adminId: string,
-    updateDto: AdminUpdateProjectStatusDto,
-  ): Promise<Project> {
     const project = await this.projectRepository.findOne({
       where: { id },
       relations: ['creator'],
@@ -413,9 +407,26 @@ export class ProjectsService {
       const updatedProject = await this.projectRepository.save(project);
       return updatedProject;
     } catch (error) {
-      console.error('Error updating project:', error);
+      this.logger.error('Error updating project:', error);
       throw new BadRequestException('Failed to update project');
     }
+  }
+
+  // admin approve project
+  public async approveProject(
+    id: string,
+    adminId: string,
+    updateDto: AdminUpdateProjectStatusDto,
+  ): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['creator'],
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
     // Validate that project is in PENDING status
     if (project.status !== ProjectStatus.PENDING) {
       throw new BadRequestException(
