@@ -12,7 +12,13 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { DonationsService } from './providers/donations.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import { UpdateDonationDto } from './dto/update-donation.dto';
@@ -29,20 +35,15 @@ export class DonationsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new donation with Stellar blockchain verification' })
-  @ApiResponse({ status: 201, type: DonationResponseDto, description: 'Donation created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid data or transaction verification failed' })
-  @ApiResponse({ status: 404, description: 'Project not found' })
-  @ApiResponse({ status: 409, description: 'Conflict - Transaction hash already exists' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token missing or invalid' })
-  async create(
-    @Body() createDonationDto: CreateDonationDto,
-    @CurrentUser('sub') userId: string,
-  ) {
-    // If donation is anonymous, pass undefined as donorId, otherwise pass the authenticated user's ID
-    const donorId = createDonationDto.isAnonymous ? undefined : userId;
-    return this.donationsService.create(createDonationDto, donorId);
+  @ApiOperation({ summary: 'Create a new donation' })
+  @ApiResponse({ status: 201, type: DonationResponseDto })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid data' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Transaction hash already exists',
+  })
+  create(@Body() createDonationDto: CreateDonationDto) {
+    return this.donationsService.create(createDonationDto);
   }
 
   @Get()
