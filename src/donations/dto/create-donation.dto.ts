@@ -2,7 +2,10 @@ import { IsNotEmpty, IsNumber, IsString, IsOptional, Min, Matches } from 'class-
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDonationDto {
-  @ApiProperty({ example: 'project-uuid', description: 'Project ID to donate to' })
+  @ApiProperty({
+    example: 'project-uuid',
+    description: 'Project ID to donate to',
+  })
   @IsNotEmpty()
   @IsString()
   projectId: string;
@@ -13,7 +16,11 @@ export class CreateDonationDto {
   @Min(0.0000001)
   amount: number;
 
-  @ApiProperty({ example: 'XLM', description: 'Asset type for donation', default: 'XLM' })
+  @ApiProperty({
+    example: 'XLM',
+    description: 'Asset type for donation',
+    default: 'XLM',
+  })
   @IsOptional()
   @IsString()
   assetType?: string;
@@ -26,7 +33,11 @@ export class CreateDonationDto {
   })
   transactionHash: string;
 
-  @ApiProperty({ example: false, description: 'Whether donation is anonymous', default: false })
+  @ApiProperty({
+    example: false,
+    description: 'Whether donation is anonymous',
+    default: false,
+  })
   @IsOptional()
   isAnonymous?: boolean = false;
 }

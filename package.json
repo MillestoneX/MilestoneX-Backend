@@ -51,7 +51,7 @@
     "pg": "^8.18.0",
     "pino": "^10.3.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
+    "rxjs": "7.8.1",
     "swagger-ui-express": "^5.0.1",
     "typeorm": "^0.3.28",
     "uuid": "^13.0.0"
@@ -88,7 +88,8 @@
     "moduleFileExtensions": [
       "js",
       "json",
-      "ts"
+      "ts",
+      ".mjs"
     ],
     "rootDir": ".",
     "testRegex": "test/.*\\.spec\\.ts$",
@@ -101,7 +102,9 @@
     "coverageDirectory": "coverage",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "^src/(.*)$": "<rootDir>/src/$1"
+      "^src/(.*)$": "<rootDir>/src/$1",
+      "^rxjs/internal/operators/(.*)$": "<rootDir>/node_modules/rxjs/dist/cjs/internal/operators/$1",
+      "^rxjs/internal/observable/(.*)$": "<rootDir>/node_modules/rxjs/dist/cjs/internal/observable/$1"
     },
     "globals": {
       "ts-jest": {

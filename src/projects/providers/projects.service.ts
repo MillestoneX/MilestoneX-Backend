@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
@@ -11,14 +12,22 @@ import { ProjectSortBy } from 'src/common/enums/projects-sortBy.enum';
 import { Project } from '../entities/project.entity';
 import { ProjectHistory } from '../entities/project-history.entity';
 import { Donation } from '../../donations/entities/donation.entity';
+import { User } from '../../users/entities/user.entity';
 import { CreateProjectDto } from '../dto/create-project.dto';
 import { UpdateProjectDto } from '../dto/update-project.dto';
 import { GetProjectsQueryDto } from '../dto/get-projects-query.dto';
 import { UpdateProjectStatusDto } from '../dto/update-project-status.dto';
 import { UserRole } from 'src/common/enums/user-role.enum';
+import { AdminUpdateProjectStatusDto } from '../dto/admin-update-project.dto';
+import { MailService } from '../../mail/mail.service';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as ejs from 'ejs';
 
 @Injectable()
 export class ProjectsService {
+  private readonly logger = new Logger(ProjectsService.name);
+
   constructor(
     @InjectRepository(Project)
     private readonly projectRepository: Repository<Project>,
@@ -26,6 +35,9 @@ export class ProjectsService {
     private readonly donationRepository: Repository<Donation>,
     @InjectRepository(ProjectHistory)
     private readonly projectHistoryRepository: Repository<ProjectHistory>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    private readonly mailService: MailService,
   ) {}
 
   // create a new project
@@ -268,7 +280,9 @@ export class ProjectsService {
     const isAdmin = userRole === 'admin';
 
     if (!isCreator && !isAdmin) {
-      throw new ForbiddenException('Only creator or admin can change project status');
+      throw new ForbiddenException(
+        'Only creator or admin can change project status',
+      );
     }
 
     const { status: newStatus, reason } = updateStatusDto;
@@ -287,10 +301,13 @@ export class ProjectsService {
     await this.projectRepository.save(project);
 
     // Record status change in history
+    const isAdminAction = userRole === 'admin';
     await this.projectHistoryRepository.save({
       previousStatus,
       newStatus,
       reason: reason || null,
+      adminNotes: null,
+      isAdminAction,
       projectId: id,
       changedBy: userId,
     });
@@ -336,6 +353,12 @@ export class ProjectsService {
     userRole: string,
   ): Promise<Project> {
     // 1. Fetch project with creator info
+  // admin approve project
+  public async approveProject(
+    id: string,
+    adminId: string,
+    updateDto: AdminUpdateProjectStatusDto,
+  ): Promise<Project> {
     const project = await this.projectRepository.findOne({
       where: { id },
       relations: ['creator'],
@@ -393,6 +416,192 @@ export class ProjectsService {
       console.error('Error updating project:', error);
       throw new BadRequestException('Failed to update project');
     }
+    // Validate that project is in PENDING status
+    if (project.status !== ProjectStatus.PENDING) {
+      throw new BadRequestException(
+        `Only projects in PENDING status can be approved. Current status: ${project.status}`,
+      );
+    }
+
+    const previousStatus = project.status;
+
+    // Update project status to APPROVED
+    project.status = ProjectStatus.APPROVED;
+    project.rejectionReason = null; // Clear any previous rejection reason
+    await this.projectRepository.save(project);
+
+    // Record status change in history with admin action flag
+    await this.projectHistoryRepository.save({
+      previousStatus,
+      newStatus: ProjectStatus.APPROVED,
+      reason: updateDto.reason || 'Project approved by admin',
+      adminNotes: updateDto.adminNotes || null,
+      isAdminAction: true,
+      projectId: id,
+      changedBy: adminId,
+    });
+
+    // Send notification email to creator
+    try {
+      await this.sendApprovalNotification(
+        project.creator,
+        project,
+        updateDto.reason,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send approval notification for project ${id}:`,
+        error.message,
+      );
+      // Don't throw - email failure shouldn't rollback the approval
+    }
+
+    // Log admin action
+    this.logger.log(
+      `Admin ${adminId} approved project ${id}. Reason: ${updateDto.reason || 'No reason provided'}`,
+    );
+
+    return project;
+  }
+
+  // admin reject project
+  public async rejectProject(
+    id: string,
+    adminId: string,
+    updateDto: AdminUpdateProjectStatusDto,
+  ): Promise<Project> {
+    const project = await this.projectRepository.findOne({
+      where: { id },
+      relations: ['creator'],
+    });
+
+    if (!project) {
+      throw new NotFoundException('Project not found');
+    }
+
+    // Validate that project is in PENDING or APPROVED status
+    if (
+      ![ProjectStatus.PENDING, ProjectStatus.APPROVED].includes(project.status)
+    ) {
+      throw new BadRequestException(
+        `Only projects in PENDING or APPROVED status can be rejected. Current status: ${project.status}`,
+      );
+    }
+
+    // Require a reason for rejection
+    if (!updateDto.reason || updateDto.reason.trim() === '') {
+      throw new BadRequestException('Rejection reason is required');
+    }
+
+    const previousStatus = project.status;
+
+    // Update project status to REJECTED and save the reason
+    project.status = ProjectStatus.REJECTED;
+    project.rejectionReason = updateDto.reason.trim();
+    await this.projectRepository.save(project);
+
+    // Record status change in history with admin action flag
+    await this.projectHistoryRepository.save({
+      previousStatus,
+      newStatus: ProjectStatus.REJECTED,
+      reason: updateDto.reason,
+      adminNotes: updateDto.adminNotes || null,
+      isAdminAction: true,
+      projectId: id,
+      changedBy: adminId,
+    });
+
+    // Send notification email to creator
+    try {
+      await this.sendRejectionNotification(
+        project.creator,
+        project,
+        updateDto.reason,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to send rejection notification for project ${id}:`,
+        error.message,
+      );
+      // Don't throw - email failure shouldn't rollback the rejection
+    }
+
+    // Log admin action
+    this.logger.log(
+      `Admin ${adminId} rejected project ${id}. Reason: ${updateDto.reason}`,
+    );
+
+    return project;
+  }
+
+  // send approval notification email
+  private async sendApprovalNotification(
+    creator: User,
+    project: Project,
+    reason?: string,
+  ): Promise<void> {
+    const templatePath = path.join(
+      __dirname,
+      '../../mail/templates/project-approval.ejs',
+    );
+    const template = fs.readFileSync(templatePath, 'utf-8');
+
+    const templateData = {
+      firstName: creator.firstName,
+      projectName: project.title,
+      projectUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/projects/${project.id}`,
+      reason: reason || 'Your project meets all requirements.',
+      currentDate: new Date().toLocaleDateString(),
+      currentYear: new Date().getFullYear(),
+    };
+
+    const html = ejs.render(template, templateData);
+
+    await this.mailService['sendMail']({
+      from: process.env.MAIL_FROM || 'noreply@stellaraid.com',
+      to: creator.email,
+      subject: `[StellarAid] Your project "${project.title}" has been approved!`,
+      html,
+    });
+
+    this.logger.log(
+      `Approval notification sent to creator of project ${project.id}`,
+    );
+  }
+
+  // send rejection notification email
+  private async sendRejectionNotification(
+    creator: User,
+    project: Project,
+    reason: string,
+  ): Promise<void> {
+    const templatePath = path.join(
+      __dirname,
+      '../../mail/templates/project-rejection.ejs',
+    );
+    const template = fs.readFileSync(templatePath, 'utf-8');
+
+    const templateData = {
+      firstName: creator.firstName,
+      projectName: project.title,
+      reason: reason,
+      resubmitUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/projects/${project.id}/edit`,
+      currentDate: new Date().toLocaleDateString(),
+      currentYear: new Date().getFullYear(),
+    };
+
+    const html = ejs.render(template, templateData);
+
+    await this.mailService['sendMail']({
+      from: process.env.MAIL_FROM || 'noreply@stellaraid.com',
+      to: creator.email,
+      subject: `[StellarAid] Update on your project "${project.title}"`,
+      html,
+    });
+
+    this.logger.log(
+      `Rejection notification sent to creator of project ${project.id}`,
+    );
   }
 }
 

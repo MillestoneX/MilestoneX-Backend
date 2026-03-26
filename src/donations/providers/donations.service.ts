@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Donation } from '../entities/donation.entity';
@@ -190,7 +195,11 @@ export class DonationsService {
     return DonationResponseDto.fromEntity(donation);
   }
 
-  async findByProject(projectId: string, page: number = 1, limit: number = 10): Promise<{ data: DonationResponseDto[]; total: number }> {
+  async findByProject(
+    projectId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: DonationResponseDto[]; total: number }> {
     const [data, total] = await this.donationsRepository.findAndCount({
       where: { projectId },
       relations: ['donor'],
@@ -205,7 +214,11 @@ export class DonationsService {
     };
   }
 
-  async findByDonor(donorId: string, page: number = 1, limit: number = 10): Promise<{ data: DonationResponseDto[]; total: number }> {
+  async findByDonor(
+    donorId: string,
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: DonationResponseDto[]; total: number }> {
     const [data, total] = await this.donationsRepository.findAndCount({
       where: { donorId },
       relations: ['project'],
@@ -220,30 +233,39 @@ export class DonationsService {
     };
   }
 
-  async findByTransactionHash(transactionHash: string): Promise<DonationResponseDto> {
+  async findByTransactionHash(
+    transactionHash: string,
+  ): Promise<DonationResponseDto> {
     const donation = await this.donationsRepository.findOne({
       where: { transactionHash },
       relations: ['project', 'donor'],
     });
 
     if (!donation) {
-      throw new NotFoundException(`Donation with transaction hash ${transactionHash} not found`);
+      throw new NotFoundException(
+        `Donation with transaction hash ${transactionHash} not found`,
+      );
     }
 
     return DonationResponseDto.fromEntity(donation);
   }
 
-  async update(id: string, updateDonationDto: UpdateDonationDto): Promise<DonationResponseDto> {
+  async update(
+    id: string,
+    updateDonationDto: UpdateDonationDto,
+  ): Promise<DonationResponseDto> {
     const donation = await this.findOne(id);
-    
+
     Object.assign(donation, updateDonationDto);
-    
+
     try {
       const updatedDonation = await this.donationsRepository.save(donation);
       return DonationResponseDto.fromEntity(updatedDonation);
     } catch (error) {
       if (error.code === '23505') {
-        throw new ConflictException('A donation with this transaction hash already exists');
+        throw new ConflictException(
+          'A donation with this transaction hash already exists',
+        );
       }
       throw new BadRequestException('Failed to update donation');
     }
