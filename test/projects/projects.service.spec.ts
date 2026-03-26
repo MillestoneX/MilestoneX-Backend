@@ -7,9 +7,10 @@ import { GetProjectsQueryDto } from 'src/projects/dto/get-projects-query.dto';
 import { Donation } from 'src/donations/entities/donation.entity';
 import { Project } from 'src/projects/entities/project.entity';
 import { ProjectHistory } from 'src/projects/entities/project-history.entity';
+import { User } from 'src/users/entities/user.entity';
 import { ProjectsService } from 'src/projects/providers/projects.service';
+import { MailService } from 'src/mail/mail.service';
 import { Repository } from 'typeorm';
-
 
 describe('ProjectsService', () => {
   let service: ProjectsService;
@@ -56,6 +57,16 @@ describe('ProjectsService', () => {
         {
           provide: getRepositoryToken(ProjectHistory),
           useValue: mockProjectHistoryRepository,
+        },
+        {
+          provide: getRepositoryToken(User),
+          useValue: mockRepository,
+        },
+        {
+          provide: MailService,
+          useValue: {
+            sendMail: jest.fn().mockResolvedValue({ messageId: 'test-id' }),
+          },
         },
       ],
     }).compile();
