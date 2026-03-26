@@ -15,7 +15,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-// Mock bcrypt
+
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
   compare: jest.fn(),
