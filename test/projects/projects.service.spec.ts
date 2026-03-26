@@ -4,7 +4,7 @@ import { ProjectCategory } from 'src/common/enums/project-category.enum';
 import { ProjectStatus } from 'src/common/enums/project-status.enum';
 import { ProjectSortBy } from 'src/common/enums/projects-sortBy.enum';
 import { GetProjectsQueryDto } from 'src/projects/dto/get-projects-query.dto';
-import { Donation } from 'src/projects/entities/donation.entity';
+import { Donation } from 'src/donations/entities/donation.entity';
 import { Project } from 'src/projects/entities/project.entity';
 import { ProjectHistory } from 'src/projects/entities/project-history.entity';
 import { ProjectsService } from 'src/projects/providers/projects.service';

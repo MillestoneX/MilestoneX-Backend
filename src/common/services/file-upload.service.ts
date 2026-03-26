@@ -3,6 +3,7 @@ import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'crypto';
+import { File } from 'buffer';
 
 @Injectable()
 export class FileUploadService {

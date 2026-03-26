@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ForbiddenException, Logger } from '@nest
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, SelectQueryBuilder } from 'typeorm';
 import { Project } from '../entities/project.entity';
-import { Donation } from '../entities/donation.entity';
+import { Donation } from '../../donations/entities/donation.entity';
 import { User } from '../../users/entities/user.entity';
 import { AnalyticsQueryDto } from '../dto/analytics-query.dto';
 

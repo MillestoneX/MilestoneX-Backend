@@ -10,7 +10,7 @@ import {
   Index,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Donation } from './donation.entity';
+import { Donation } from '../../donations/entities/donation.entity';
 import { ProjectImage } from './project-image.entity';
 import { ProjectHistory } from './project-history.entity';
 import { ProjectCategory } from 'src/common/enums/project-category.enum';
