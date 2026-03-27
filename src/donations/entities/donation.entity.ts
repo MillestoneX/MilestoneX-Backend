@@ -28,7 +28,7 @@ export class Donation {
   @JoinColumn({ name: 'projectId' })
   project: Project;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'uuid' })
   donorId: string | null;
 
   @ManyToOne(() => User, { nullable: true, eager: false, onDelete: 'SET NULL' })
@@ -41,7 +41,7 @@ export class Donation {
   @Column({ default: 'XLM' })
   assetType: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true, unique: true, type: 'varchar' })
   transactionHash: string | null;
 
   @Column({ default: false })

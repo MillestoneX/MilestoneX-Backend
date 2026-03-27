@@ -29,16 +29,16 @@ export class User {
   @Column()
   lastName: string;
 
-  @Column({ nullable: true, unique: true })
+  @Column({ nullable: true, unique: true, type: 'varchar' })
   walletAddress: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   country: string | null;
 
   @Column({ nullable: true, type: 'text' })
   bio: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   avatarUrl: string | null;
 
   @Column({
@@ -51,22 +51,22 @@ export class User {
   @Column({ default: false })
   isEmailVerified: boolean;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   emailVerificationToken: string | null;
 
   @Column({ nullable: true, type: 'timestamp' })
   emailVerificationTokenExpiry: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   resetPasswordTokenSelector: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   resetPasswordTokenHash: string | null;
 
   @Column({ nullable: true, type: 'timestamp' })
   resetPasswordTokenExpiry: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   refreshTokenHash: string | null;
 
   @Column({
@@ -82,10 +82,10 @@ export class User {
   @Column({ nullable: true, type: 'timestamp' })
   kycVerifiedAt: Date | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   kycDocumentUrl: string | null;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   kycRejectionReason: string | null;
 
   @CreateDateColumn()
