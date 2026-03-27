@@ -49,4 +49,9 @@ export class Donation {
 
   @CreateDateColumn()
   createdAt: Date;
+
+
+  // @CreateDateColumn()
+  // createdAt: Date;
+
 }
