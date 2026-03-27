@@ -15,7 +15,6 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
-
 jest.mock('bcrypt', () => ({
   hash: jest.fn(),
   compare: jest.fn(),
@@ -298,7 +297,9 @@ describe('AuthService', () => {
       };
       userRepository.findOne.mockResolvedValue(unverifiedUser as User);
 
-      const result = await authService.resendVerification(resendVerificationDto);
+      const result = await authService.resendVerification(
+        resendVerificationDto,
+      );
 
       expect(result.message).toBe('Verification email resent');
     });
@@ -328,7 +329,9 @@ describe('AuthService', () => {
     it('should return success message even if user not found (security)', async () => {
       userRepository.findOne.mockResolvedValue(null);
 
-      const result = await authService.forgotPassword('nonexistent@example.com');
+      const result = await authService.forgotPassword(
+        'nonexistent@example.com',
+      );
 
       expect(result.message).toBe(
         'If an account with that email exists, a reset link has been sent',
@@ -490,7 +493,10 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(mockUser as User);
       userRepository.save.mockResolvedValue(mockUser as User);
 
-      const result = await authService.updateKYCStatus(mockUser.id, updateKycDto);
+      const result = await authService.updateKYCStatus(
+        mockUser.id,
+        updateKycDto,
+      );
 
       expect(result.message).toBe('KYC status updated to approved');
       expect(userRepository.save).toHaveBeenCalled();
@@ -557,9 +563,9 @@ describe('AuthService', () => {
       jwtService.verify.mockReturnValue(jwtPayload);
       userRepository.findOne.mockResolvedValue(null);
 
-      await expect(
-        authService.refreshToken(refreshTokenDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException if no refresh token hash stored', async () => {
@@ -570,9 +576,9 @@ describe('AuthService', () => {
       jwtService.verify.mockReturnValue(jwtPayload);
       userRepository.findOne.mockResolvedValue(userWithoutHash as User);
 
-      await expect(
-        authService.refreshToken(refreshTokenDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for invalid refresh token', async () => {
@@ -580,29 +586,33 @@ describe('AuthService', () => {
       userRepository.findOne.mockResolvedValue(mockUser as User);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(
-        authService.refreshToken(refreshTokenDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for expired JWT token', async () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
-        throw Object.assign(new Error('Token expired'), { name: 'TokenExpiredError' });
+        throw Object.assign(new Error('Token expired'), {
+          name: 'TokenExpiredError',
+        });
       });
 
-      await expect(
-        authService.refreshToken(refreshTokenDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException for invalid JWT token', async () => {
       jest.spyOn(jwtService, 'verify').mockImplementation(() => {
-        throw Object.assign(new Error('JsonWebTokenError'), { name: 'JsonWebTokenError' });
+        throw Object.assign(new Error('JsonWebTokenError'), {
+          name: 'JsonWebTokenError',
+        });
       });
 
-      await expect(
-        authService.refreshToken(refreshTokenDto),
-      ).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshToken(refreshTokenDto)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
   });
 });

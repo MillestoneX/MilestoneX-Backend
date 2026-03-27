@@ -28,7 +28,10 @@ import { StellarBlockchainService } from '../../common/services/stellar-blockcha
 import { MailService } from '../../mail/mail.service';
 
 // In-memory store for webhook deduplication (in production, use Redis)
-const processedWebhooks = new Map<string, { donationId: string; processedAt: Date }>();
+const processedWebhooks = new Map<
+  string,
+  { donationId: string; processedAt: Date }
+>();
 const WEBHOOK_DEDUP_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 @Injectable()
@@ -45,8 +48,17 @@ export class DonationsService {
     private mailService: MailService,
   ) {}
 
-  async create(createDonationDto: CreateDonationDto, donorId?: string): Promise<DonationResponseDto> {
-    const { projectId, transactionHash, amount, assetType = 'XLM', isAnonymous = false } = createDonationDto;
+  async create(
+    createDonationDto: CreateDonationDto,
+    donorId?: string,
+  ): Promise<DonationResponseDto> {
+    const {
+      projectId,
+      transactionHash,
+      amount,
+      assetType = 'XLM',
+      isAnonymous = false,
+    } = createDonationDto;
 
     try {
       // 1. Check if project exists
@@ -64,11 +76,14 @@ export class DonationsService {
       });
 
       if (existingDonation) {
-        throw new ConflictException('A donation with this transaction hash already exists');
+        throw new ConflictException(
+          'A donation with this transaction hash already exists',
+        );
       }
 
       // 3. Verify transaction on Stellar blockchain
-      const verificationResult = await this.stellarBlockchainService.verifyTransaction(transactionHash);
+      const verificationResult =
+        await this.stellarBlockchainService.verifyTransaction(transactionHash);
 
       if (!verificationResult.isValid) {
         throw new BadRequestException(
@@ -92,7 +107,8 @@ export class DonationsService {
       await this.projectRepository.update(
         { id: projectId },
         {
-          fundsRaised: () => `CAST(fundsRaised + ${Number(amount)} AS decimal(18,7))`,
+          fundsRaised: () =>
+            `CAST(fundsRaised + ${Number(amount)} AS decimal(18,7))`,
           donationCount: () => 'donationCount + 1',
         },
       );
@@ -119,7 +135,11 @@ export class DonationsService {
 
       // 7. Send confirmation email to donor (if not anonymous)
       if (!isAnonymous && donorId) {
-        this.sendDonationConfirmationEmail(donorId, savedDonation, project).catch((error) => {
+        this.sendDonationConfirmationEmail(
+          donorId,
+          savedDonation,
+          project,
+        ).catch((error) => {
           console.error('Error sending donation confirmation email:', error);
           // Don't throw - email failures shouldn't affect the donation success
         });
@@ -139,7 +159,9 @@ export class DonationsService {
       // Handle database-specific errors
       if (error.code === '23505') {
         // PostgreSQL unique violation
-        throw new ConflictException('A donation with this transaction hash already exists');
+        throw new ConflictException(
+          'A donation with this transaction hash already exists',
+        );
       }
 
       if (error.code === '23503') {
@@ -164,7 +186,9 @@ export class DonationsService {
       });
 
       if (!donor || !donor.email) {
-        console.warn(`Unable to send confirmation email - donor ${donorId} not found or has no email`);
+        console.warn(
+          `Unable to send confirmation email - donor ${donorId} not found or has no email`,
+        );
         return;
       }
 
@@ -185,7 +209,10 @@ export class DonationsService {
     }
   }
 
-  async findAll(page: number = 1, limit: number = 10): Promise<{ data: DonationResponseDto[]; total: number }> {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+  ): Promise<{ data: DonationResponseDto[]; total: number }> {
     const [data, total] = await this.donationsRepository.findAndCount({
       relations: ['project', 'donor'],
       order: { createdAt: 'DESC' },
@@ -408,7 +435,11 @@ export class DonationsService {
       .getMany();
 
     // Calculate summary statistics
-    const summary = await this.calculateUserDonationSummary(userId, startDate, endDate);
+    const summary = await this.calculateUserDonationSummary(
+      userId,
+      startDate,
+      endDate,
+    );
 
     // Transform donations to DTOs
     const donationItems: UserDonationItemDto[] = donations.map((donation) =>
@@ -478,19 +509,26 @@ export class DonationsService {
     webhookDto: WebhookDonationDto,
     donorId?: string,
   ): Promise<WebhookResponseDto> {
-    const { transactionHash, projectId, amount, assetType = 'XLM', isAnonymous = false, webhookId } = webhookDto;
+    const {
+      transactionHash,
+      projectId,
+      amount,
+      assetType = 'XLM',
+      isAnonymous = false,
+      webhookId,
+    } = webhookDto;
 
     try {
       // 1. Check for duplicate webhook using webhookId or transaction hash
       const dedupKey = webhookId || transactionHash;
       const existingWebhook = processedWebhooks.get(dedupKey);
-      
+
       if (existingWebhook) {
         // Check if donation still exists
         const existingDonation = await this.donationsRepository.findOne({
           where: { id: existingWebhook.donationId },
         });
-        
+
         if (existingDonation) {
           this.logger.log(`Duplicate webhook detected: ${dedupKey}`);
           return {
@@ -500,7 +538,7 @@ export class DonationsService {
             duplicate: true,
           };
         }
-        
+
         // Clean up stale entry
         processedWebhooks.delete(dedupKey);
       }
@@ -525,7 +563,7 @@ export class DonationsService {
           donationId: existingDonation.id,
           processedAt: new Date(),
         });
-        
+
         return {
           success: true,
           message: 'Donation already exists with this transaction hash',
@@ -535,11 +573,12 @@ export class DonationsService {
       }
 
       // 4. Verify transaction on Stellar blockchain with detailed validation
-      const verificationResult = await this.stellarBlockchainService.verifyTransaction(
-        transactionHash,
-        amount,
-        assetType,
-      );
+      const verificationResult =
+        await this.stellarBlockchainService.verifyTransaction(
+          transactionHash,
+          amount,
+          assetType,
+        );
 
       if (!verificationResult.isValid) {
         throw new BadRequestException(
@@ -563,7 +602,8 @@ export class DonationsService {
       await this.projectRepository.update(
         { id: projectId },
         {
-          fundsRaised: () => `CAST(fundsRaised + ${Number(amount)} AS decimal(18,7))`,
+          fundsRaised: () =>
+            `CAST(fundsRaised + ${Number(amount)} AS decimal(18,7))`,
           donationCount: () => 'donationCount + 1',
         },
       );
@@ -594,8 +634,15 @@ export class DonationsService {
 
       // 9. Send confirmation email to donor (if not anonymous and donorId available)
       if (!isAnonymous && donorId) {
-        this.sendDonationConfirmationEmail(donorId, savedDonation, project).catch((error) => {
-          this.logger.error('Error sending donation confirmation email:', error);
+        this.sendDonationConfirmationEmail(
+          donorId,
+          savedDonation,
+          project,
+        ).catch((error) => {
+          this.logger.error(
+            'Error sending donation confirmation email:',
+            error,
+          );
         });
       }
 
@@ -625,7 +672,7 @@ export class DonationsService {
         const existingDonation = await this.donationsRepository.findOne({
           where: { transactionHash },
         });
-        
+
         if (existingDonation) {
           // Use transactionHash as dedup key if webhookId not available
           const dedupKeyForCatch = webhookDto.webhookId || transactionHash;
@@ -633,7 +680,7 @@ export class DonationsService {
             donationId: existingDonation.id,
             processedAt: new Date(),
           });
-          
+
           return {
             success: true,
             message: 'Donation already exists with this transaction hash',

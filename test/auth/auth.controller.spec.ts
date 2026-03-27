@@ -96,7 +96,9 @@ describe('AuthController', () => {
 
       const mockReq = {} as Request;
 
-      jest.spyOn(authService, 'login').mockResolvedValue(mockAuthResponse as any);
+      jest
+        .spyOn(authService, 'login')
+        .mockResolvedValue(mockAuthResponse as any);
 
       const result = await authController.login(loginDto, mockReq);
 
@@ -112,7 +114,9 @@ describe('AuthController', () => {
 
       const mockReq = { headers: { host: 'localhost' } } as Request;
 
-      jest.spyOn(authService, 'login').mockResolvedValue(mockAuthResponse as any);
+      jest
+        .spyOn(authService, 'login')
+        .mockResolvedValue(mockAuthResponse as any);
 
       await authController.login(loginDto, mockReq);
 

@@ -11,9 +11,11 @@ export class WebhookSignatureService {
 
   constructor(private configService: ConfigService) {
     this.webhookSecret = this.configService.get<string>('WEBHOOK_SECRET', '');
-    
+
     if (!this.webhookSecret) {
-      this.logger.warn('WEBHOOK_SECRET is not configured. Webhook signature validation will be skipped.');
+      this.logger.warn(
+        'WEBHOOK_SECRET is not configured. Webhook signature validation will be skipped.',
+      );
     }
   }
 
@@ -28,7 +30,9 @@ export class WebhookSignatureService {
   ): boolean {
     // If no webhook secret configured, skip validation (development mode)
     if (!this.webhookSecret) {
-      this.logger.debug('Webhook signature validation skipped - no secret configured');
+      this.logger.debug(
+        'Webhook signature validation skipped - no secret configured',
+      );
       return true;
     }
 
@@ -42,8 +46,9 @@ export class WebhookSignatureService {
     const now = Math.floor(Date.now() / 1000);
     const webhookTimestamp = parseInt(timestamp, 10);
     const timeDiff = Math.abs(now - webhookTimestamp);
-    
-    if (timeDiff > 300) { // 5 minutes
+
+    if (timeDiff > 300) {
+      // 5 minutes
       this.logger.warn(`Webhook timestamp too old: ${timeDiff} seconds ago`);
       return false;
     }
@@ -92,7 +97,7 @@ export class WebhookSignatureService {
   generateSignature(payload: string, timestamp?: number): string {
     const ts = timestamp || Math.floor(Date.now() / 1000);
     const signedPayload = `${ts}.${payload}`;
-    
+
     return crypto
       .createHmac('sha256', this.webhookSecret)
       .update(signedPayload)

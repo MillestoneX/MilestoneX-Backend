@@ -45,12 +45,28 @@ export class DonationsController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new donation with Stellar blockchain verification' })
-  @ApiResponse({ status: 201, type: DonationResponseDto, description: 'Donation created successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid data or transaction verification failed' })
+  @ApiOperation({
+    summary: 'Create a new donation with Stellar blockchain verification',
+  })
+  @ApiResponse({
+    status: 201,
+    type: DonationResponseDto,
+    description: 'Donation created successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description:
+      'Bad request - Invalid data or transaction verification failed',
+  })
   @ApiResponse({ status: 404, description: 'Project not found' })
-  @ApiResponse({ status: 409, description: 'Conflict - Transaction hash already exists' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - JWT token missing or invalid' })
+  @ApiResponse({
+    status: 409,
+    description: 'Conflict - Transaction hash already exists',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - JWT token missing or invalid',
+  })
   async create(
     @Body() createDonationDto: CreateDonationDto,
     @CurrentUser('sub') userId: string,
@@ -66,10 +82,7 @@ export class DonationsController {
   @ApiResponse({ status: 200, description: 'List of donations' })
   @ApiQuery({ name: 'page', required: false, type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, type: Number, example: 10 })
-  findAll(
-    @Query('page') page: number = 1,
-    @Query('limit') limit: number = 10,
-  ) {
+  findAll(@Query('page') page: number = 1, @Query('limit') limit: number = 10) {
     return this.donationsService.findAll(page, limit);
   }
 
@@ -160,34 +173,50 @@ export class DonationsController {
   @Post('webhook')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Webhook endpoint for real-time donation notifications' })
-  @ApiResponse({ status: 200, type: WebhookResponseDto, description: 'Webhook processed successfully' })
-  @ApiResponse({ status: 400, description: 'Bad request - Invalid payload or signature' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid webhook signature' })
+  @ApiOperation({
+    summary: 'Webhook endpoint for real-time donation notifications',
+  })
+  @ApiResponse({
+    status: 200,
+    type: WebhookResponseDto,
+    description: 'Webhook processed successfully',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad request - Invalid payload or signature',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid webhook signature',
+  })
   async handleWebhook(
     @Body() webhookDto: WebhookDonationDto,
     @Headers() headers: Record<string, string | string[]>,
     @Req() req: ExpressRequest,
   ): Promise<WebhookResponseDto> {
     // Get raw body for signature validation
-    const rawBody = (req as any).rawBody as string || JSON.stringify(webhookDto);
-    
+    const rawBody =
+      ((req as any).rawBody as string) || JSON.stringify(webhookDto);
+
     // Extract signature and timestamp from headers
-    const { signature, timestamp } = this.webhookSignatureService.extractHeaders(headers);
-    
+    const { signature, timestamp } =
+      this.webhookSignatureService.extractHeaders(headers);
+
     // Validate webhook signature
     const isValidSignature = this.webhookSignatureService.validateSignature(
       rawBody,
       signature,
       timestamp,
     );
-    
+
     if (!isValidSignature) {
-      throw new HttpException('Invalid webhook signature', HttpStatus.UNAUTHORIZED);
+      throw new HttpException(
+        'Invalid webhook signature',
+        HttpStatus.UNAUTHORIZED,
+      );
     }
-    
+
     // Process the webhook donation
     return this.donationsService.processWebhookDonation(webhookDto);
   }
 }
-

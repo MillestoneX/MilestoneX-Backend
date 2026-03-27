@@ -1,10 +1,4 @@
-import {
-  IsEnum,
-  IsOptional,
-  IsString,
-  IsUrl,
-  IsArray,
-} from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsUrl, IsArray } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { ProjectCategory } from 'src/common/enums/project-category.enum';
 

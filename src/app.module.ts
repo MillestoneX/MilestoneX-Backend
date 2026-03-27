@@ -10,6 +10,7 @@ import { LoggerModule } from './logger/logger.module';
 import { ProjectsModule } from './projects/projects.module';
 import { MailModule } from './mail/mail.module';
 import { DonationsModule } from './donations/donations.module';
+import { WithdrawalsModule } from './withdrawals/withdrawals.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { DonationsModule } from './donations/donations.module';
     UsersModule,
     ProjectsModule,
     DonationsModule,
+    WithdrawalsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -15,6 +15,7 @@ import { ProjectImage } from './project-image.entity';
 import { ProjectHistory } from './project-history.entity';
 import { ProjectCategory } from 'src/common/enums/project-category.enum';
 import { ProjectStatus } from 'src/common/enums/project-status.enum';
+import { Withdrawal } from '../../withdrawals/entities/withdrawal.entity';
 
 @Entity('projects')
 @Index('IDX_projects_creator_id', ['creatorId'])
@@ -31,7 +32,7 @@ export class Project {
   @Column({ type: 'text' })
   description: string;
 
-  @Column({ nullable: true })
+  @Column({ nullable: true, type: 'varchar' })
   imageUrl: string | null;
 
   @Column({
@@ -84,6 +85,11 @@ export class Project {
     cascade: true,
   })
   history: ProjectHistory[];
+
+  @OneToMany(() => Withdrawal, (withdrawal) => withdrawal.project, {
+    cascade: true,
+  })
+  withdrawals: Withdrawal[];
 
   @CreateDateColumn()
   createdAt: Date;
