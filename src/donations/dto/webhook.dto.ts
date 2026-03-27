@@ -1,4 +1,12 @@
-import { IsNotEmpty, IsNumber, IsString, IsOptional, IsEnum, IsDateString, Min } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsOptional,
+  IsEnum,
+  IsDateString,
+  Min,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -100,10 +108,16 @@ export class WebhookDonationDto {
  * Response for webhook endpoint
  */
 export class WebhookResponseDto {
-  @ApiProperty({ example: true, description: 'Whether the webhook was processed successfully' })
+  @ApiProperty({
+    example: true,
+    description: 'Whether the webhook was processed successfully',
+  })
   success: boolean;
 
-  @ApiProperty({ example: 'Donation processed successfully', description: 'Message describing the result' })
+  @ApiProperty({
+    example: 'Donation processed successfully',
+    description: 'Message describing the result',
+  })
   message: string;
 
   @ApiProperty({

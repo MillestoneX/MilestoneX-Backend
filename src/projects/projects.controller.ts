@@ -166,11 +166,17 @@ export class ProjectsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.CREATOR, UserRole.ADMIN)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Update project details (CREATOR or ADMIN required)' })
+  @ApiOperation({
+    summary: 'Update project details (CREATOR or ADMIN required)',
+  })
   @ApiOkResponse({ description: 'Project updated successfully' })
-  @ApiBadRequestResponse({ description: 'Invalid input data or cannot update completed project' })
+  @ApiBadRequestResponse({
+    description: 'Invalid input data or cannot update completed project',
+  })
   @ApiNotFoundResponse({ description: 'Project not found' })
-  @ApiForbiddenResponse({ description: 'Only creator or admin can update project' })
+  @ApiForbiddenResponse({
+    description: 'Only creator or admin can update project',
+  })
   @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   async update(
     @Param('id') id: string,
@@ -179,7 +185,12 @@ export class ProjectsController {
   ) {
     const userId = req.user.sub;
     const userRole = req.user.role;
-    const project = await this.projectsService.update(id, updateProjectDto, userId, userRole);
+    const project = await this.projectsService.update(
+      id,
+      updateProjectDto,
+      userId,
+      userRole,
+    );
     return project;
   }
 

@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsNumber, IsString, IsOptional, Min, Matches } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsOptional,
+  Min,
+  Matches,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateDonationDto {
@@ -25,11 +32,15 @@ export class CreateDonationDto {
   @IsString()
   assetType?: string;
 
-  @ApiProperty({ example: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', description: 'Stellar blockchain transaction hash (64 hex characters)' })
+  @ApiProperty({
+    example: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855',
+    description: 'Stellar blockchain transaction hash (64 hex characters)',
+  })
   @IsNotEmpty()
   @IsString()
   @Matches(/^[a-f0-9]{64}$/, {
-    message: 'Transaction hash must be a valid Stellar transaction hash (64 hexadecimal characters)',
+    message:
+      'Transaction hash must be a valid Stellar transaction hash (64 hexadecimal characters)',
   })
   transactionHash: string;
 

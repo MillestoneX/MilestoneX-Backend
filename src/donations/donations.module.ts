@@ -16,7 +16,13 @@ import { WebhookSignatureService } from '../common/services/webhook-signature.se
     TypeOrmModule.forFeature([Donation, Project, User, ProjectHistory]),
   ],
   controllers: [DonationsController],
-  providers: [DonationsService, StellarBlockchainService, ProjectsService, MailService, WebhookSignatureService],
+  providers: [
+    DonationsService,
+    StellarBlockchainService,
+    ProjectsService,
+    MailService,
+    WebhookSignatureService,
+  ],
   exports: [DonationsService, TypeOrmModule],
 })
 export class DonationsModule {}

@@ -119,10 +119,16 @@ export class MailService {
     },
   ): Promise<void> {
     try {
-      const templatePath = path.join(this.templatesPath, 'donation-confirmation.ejs');
+      const templatePath = path.join(
+        this.templatesPath,
+        'donation-confirmation.ejs',
+      );
       const template = fs.readFileSync(templatePath, 'utf-8');
 
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL', 'http://localhost:3000');
+      const frontendUrl = this.configService.get<string>(
+        'FRONTEND_URL',
+        'http://localhost:3000',
+      );
       const templateData = {
         firstName,
         appName: this.configService.get<string>('APP_NAME', 'StellarAid'),

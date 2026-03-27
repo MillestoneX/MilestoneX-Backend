@@ -2,7 +2,10 @@ import { Injectable, Logger, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
 // Cache for verification results
-const verificationCache = new Map<string, { result: TransactionVerificationResult; timestamp: number }>();
+const verificationCache = new Map<
+  string,
+  { result: TransactionVerificationResult; timestamp: number }
+>();
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 // Supported asset types
@@ -48,12 +51,20 @@ export class StellarBlockchainService {
       'STELLAR_HORIZON_URL',
       'https://horizon-testnet.stellar.org',
     );
-    this.stellarNetwork = this.configService.get<string>('STELLAR_NETWORK', 'TESTNET');
+    this.stellarNetwork = this.configService.get<string>(
+      'STELLAR_NETWORK',
+      'TESTNET',
+    );
 
     // Load platform distributing addresses from config
-    const platformAddresses = this.configService.get<string>('STELLAR_PLATFORM_ADDRESSES', '');
+    const platformAddresses = this.configService.get<string>(
+      'STELLAR_PLATFORM_ADDRESSES',
+      '',
+    );
     if (platformAddresses) {
-      platformAddresses.split(',').forEach((addr) => PLATFORM_DISTRIBUTING_ADDRESSES.add(addr.trim()));
+      platformAddresses
+        .split(',')
+        .forEach((addr) => PLATFORM_DISTRIBUTING_ADDRESSES.add(addr.trim()));
     }
 
     this.logger.log(`Initialized with Horizon URL: ${this.horizonUrl}`);
@@ -76,7 +87,9 @@ export class StellarBlockchainService {
     // Check cache first
     const cachedResult = this.getCachedResult(transactionHash);
     if (cachedResult) {
-      this.logger.log(`Using cached verification for transaction ${transactionHash}`);
+      this.logger.log(
+        `Using cached verification for transaction ${transactionHash}`,
+      );
       return cachedResult;
     }
 
@@ -101,7 +114,9 @@ export class StellarBlockchainService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          this.logger.warn(`Transaction ${transactionHash} not found on blockchain`);
+          this.logger.warn(
+            `Transaction ${transactionHash} not found on blockchain`,
+          );
           return {
             isValid: false,
             error: 'Transaction not found on the Stellar blockchain',
@@ -121,7 +136,9 @@ export class StellarBlockchainService {
 
       // Verify transaction has successful result
       if (!this.isSuccessfulTransaction(transaction)) {
-        this.logger.warn(`Transaction ${transactionHash} did not execute successfully`);
+        this.logger.warn(
+          `Transaction ${transactionHash} did not execute successfully`,
+        );
         return {
           isValid: false,
           error: 'Transaction did not execute successfully on the blockchain',
@@ -129,7 +146,8 @@ export class StellarBlockchainService {
       }
 
       // Parse transaction operations for detailed verification
-      const parsedDetails = await this.parseTransactionOperations(transactionHash);
+      const parsedDetails =
+        await this.parseTransactionOperations(transactionHash);
       if (!parsedDetails) {
         return {
           isValid: false,
@@ -141,9 +159,11 @@ export class StellarBlockchainService {
       if (expectedAsset && parsedDetails.asset) {
         const normalizedExpected = expectedAsset.toUpperCase();
         const normalizedActual = parsedDetails.asset.toUpperCase();
-        
+
         if (normalizedExpected !== normalizedActual) {
-          this.logger.warn(`Asset mismatch: expected ${normalizedExpected}, got ${normalizedActual}`);
+          this.logger.warn(
+            `Asset mismatch: expected ${normalizedExpected}, got ${normalizedActual}`,
+          );
           return {
             isValid: false,
             error: `Asset type mismatch: expected ${normalizedExpected}, got ${normalizedActual}`,
@@ -155,9 +175,11 @@ export class StellarBlockchainService {
       if (expectedAmount !== undefined && parsedDetails.amount !== undefined) {
         const tolerance = 0.000001; // Allow for floating point precision
         const amountDiff = Math.abs(parsedDetails.amount - expectedAmount);
-        
+
         if (amountDiff > tolerance) {
-          this.logger.warn(`Amount mismatch: expected ${expectedAmount}, got ${parsedDetails.amount}`);
+          this.logger.warn(
+            `Amount mismatch: expected ${expectedAmount}, got ${parsedDetails.amount}`,
+          );
           return {
             isValid: false,
             error: `Amount mismatch: expected ${expectedAmount}, got ${parsedDetails.amount}`,
@@ -167,8 +189,13 @@ export class StellarBlockchainService {
 
       // Validate destination if expected
       if (expectedDestination && parsedDetails.destinationAccount) {
-        if (expectedDestination.toLowerCase() !== parsedDetails.destinationAccount.toLowerCase()) {
-          this.logger.warn(`Destination mismatch: expected ${expectedDestination}, got ${parsedDetails.destinationAccount}`);
+        if (
+          expectedDestination.toLowerCase() !==
+          parsedDetails.destinationAccount.toLowerCase()
+        ) {
+          this.logger.warn(
+            `Destination mismatch: expected ${expectedDestination}, got ${parsedDetails.destinationAccount}`,
+          );
           return {
             isValid: false,
             error: `Destination address mismatch`,
@@ -204,9 +231,7 @@ export class StellarBlockchainService {
   /**
    * Parse transaction operations to extract payment details
    */
-  private async parseTransactionOperations(
-    transactionHash: string,
-  ): Promise<{
+  private async parseTransactionOperations(transactionHash: string): Promise<{
     amount?: number;
     asset?: string;
     sourceAccount?: string;
@@ -272,12 +297,15 @@ export class StellarBlockchainService {
     destinationAddress: string,
   ): Promise<TransactionVerificationResult> {
     const result = await this.verifyTransaction(transactionHash);
-    
+
     if (!result.isValid) {
       return result;
     }
 
-    if (result.destinationAccount?.toLowerCase() !== destinationAddress.toLowerCase()) {
+    if (
+      result.destinationAccount?.toLowerCase() !==
+      destinationAddress.toLowerCase()
+    ) {
       return {
         isValid: false,
         error: `Transaction is not directed to the expected destination`,
@@ -298,9 +326,11 @@ export class StellarBlockchainService {
   /**
    * Get cached verification result if available and not expired
    */
-  private getCachedResult(transactionHash: string): TransactionVerificationResult | null {
+  private getCachedResult(
+    transactionHash: string,
+  ): TransactionVerificationResult | null {
     const cached = verificationCache.get(transactionHash);
-    
+
     if (cached) {
       const now = Date.now();
       if (now - cached.timestamp < CACHE_TTL_MS) {
@@ -309,14 +339,17 @@ export class StellarBlockchainService {
       // Remove expired cache entry
       verificationCache.delete(transactionHash);
     }
-    
+
     return null;
   }
 
   /**
    * Cache verification result
    */
-  private cacheResult(transactionHash: string, result: TransactionVerificationResult): void {
+  private cacheResult(
+    transactionHash: string,
+    result: TransactionVerificationResult,
+  ): void {
     verificationCache.set(transactionHash, {
       result,
       timestamp: Date.now(),
@@ -360,7 +393,9 @@ export class StellarBlockchainService {
    * @param transactionHash - The transaction hash to retrieve
    * @returns Promise resolving to transaction details or null if not found
    */
-  async getTransactionDetails(transactionHash: string): Promise<StellarTransaction | null> {
+  async getTransactionDetails(
+    transactionHash: string,
+  ): Promise<StellarTransaction | null> {
     try {
       if (!this.isValidTransactionHash(transactionHash)) {
         return null;

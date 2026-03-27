@@ -367,7 +367,9 @@ export class ProjectsService {
     const isAdmin = userRole === UserRole.ADMIN;
 
     if (!isCreator && !isAdmin) {
-      throw new ForbiddenException('Only project creator or admin can update project');
+      throw new ForbiddenException(
+        'Only project creator or admin can update project',
+      );
     }
 
     // 3. Prevent updates to completed or rejected projects
@@ -615,4 +617,3 @@ export class ProjectsService {
     );
   }
 }
-
