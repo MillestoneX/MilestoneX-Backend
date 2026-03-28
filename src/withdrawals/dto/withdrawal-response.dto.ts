@@ -5,6 +5,7 @@ export class WithdrawalResponseDto {
   projectId: string;
   projectTitle?: string;
   amount: number;
+  assetType: string;
   status: WithdrawalStatus;
   transactionHash: string | null;
   rejectionReason: string | null;

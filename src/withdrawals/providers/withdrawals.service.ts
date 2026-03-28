@@ -14,6 +14,7 @@ import { WithdrawalStatus } from '../../common/enums/withdrawal-status.enum';
 import { CreateWithdrawalDto } from '../dto/create-withdrawal.dto';
 import { GetWithdrawalsDto } from '../dto/get-withdrawals.dto';
 import { MailService } from '../../mail/mail.service';
+import { StellarPayoutService } from './stellar-payout.service';
 
 @Injectable()
 export class WithdrawalsService {
@@ -25,6 +26,7 @@ export class WithdrawalsService {
     @InjectRepository(Project)
     private projectsRepository: Repository<Project>,
     private mailService: MailService,
+    private stellarPayoutService: StellarPayoutService,
   ) {}
 
   async createWithdrawal(
@@ -98,6 +100,7 @@ export class WithdrawalsService {
     const withdrawal = this.withdrawalsRepository.create({
       projectId,
       amount,
+      assetType: createWithdrawalDto.assetType ?? 'XLM',
       status: WithdrawalStatus.PENDING,
     });
 
@@ -201,6 +204,54 @@ export class WithdrawalsService {
     return withdrawal;
   }
 
+  /**
+   * Process an approved withdrawal by sending funds to the creator via Stellar.
+   * Only callable by admins. Updates status to PAID and stores the transaction hash.
+   */
+  async processWithdrawalPayout(withdrawalId: string): Promise<Withdrawal> {
+    const withdrawal = await this.withdrawalsRepository.findOne({
+      where: { id: withdrawalId },
+      relations: ['project', 'project.creator'],
+    });
+
+    if (!withdrawal) {
+      throw new NotFoundException('Withdrawal not found');
+    }
+
+    if (withdrawal.status !== WithdrawalStatus.APPROVED) {
+      throw new BadRequestException(
+        `Cannot process payout: withdrawal status is '${withdrawal.status}'. Only approved withdrawals can be paid out.`,
+      );
+    }
+
+    const creatorWallet = withdrawal.project.creator.walletAddress;
+    if (!creatorWallet) {
+      throw new BadRequestException(
+        'Creator does not have a Stellar wallet address configured',
+      );
+    }
+
+    this.logger.log(
+      `Processing payout for withdrawal ${withdrawalId}: ${withdrawal.amount} ${withdrawal.assetType} → ${creatorWallet}`,
+    );
+
+    const { transactionHash } = await this.stellarPayoutService.sendPayment({
+      destinationAddress: creatorWallet,
+      amount: Number(withdrawal.amount),
+      assetType: withdrawal.assetType,
+      withdrawalId,
+    });
+
+    withdrawal.status = WithdrawalStatus.PAID;
+    withdrawal.transactionHash = transactionHash;
+
+    const saved = await this.withdrawalsRepository.save(withdrawal);
+
+    this.logger.log(
+      `Withdrawal ${withdrawalId} marked as PAID. Transaction hash: ${transactionHash}`,
+    );
+
+    return saved;
   async getCreatorWithdrawalHistory(
     userId: string,
     query: GetWithdrawalsDto,
