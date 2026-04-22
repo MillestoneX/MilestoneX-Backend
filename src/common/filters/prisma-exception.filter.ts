@@ -2,7 +2,11 @@ import { ExceptionFilter, Catch, ArgumentsHost, Logger } from '@nestjs/common';
 import { Response, Request } from 'express';
 import { Prisma } from 'generated/prisma/client';
 
-@Catch(Prisma.PrismaClientKnownRequestError, Prisma.PrismaClientValidationError, Prisma.PrismaClientUnknownRequestError)
+@Catch(
+  Prisma.PrismaClientKnownRequestError,
+  Prisma.PrismaClientValidationError,
+  Prisma.PrismaClientUnknownRequestError,
+)
 export class PrismaExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(PrismaExceptionFilter.name);
 

@@ -2,7 +2,10 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { WinstonModule } from 'nest-winston';
 import { AppModule } from './app.module';
-import { HttpExceptionFilter, PrismaExceptionFilter } from './common/filters/index';
+import {
+  HttpExceptionFilter,
+  PrismaExceptionFilter,
+} from './common/filters/index';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 import { winstonConfig } from './config/winston.config';
 
@@ -45,6 +48,8 @@ async function bootstrap() {
   });
 
   await app.listen(process.env.PORT ?? 3000);
-  console.log(`Application is running on: http://localhost:${process.env.PORT ?? 3000}`);
+  console.log(
+    `Application is running on: http://localhost:${process.env.PORT ?? 3000}`,
+  );
 }
 bootstrap();
