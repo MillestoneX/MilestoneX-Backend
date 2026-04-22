@@ -9,7 +9,9 @@ export class RequestLoggerMiddleware implements NestMiddleware {
     const { method, originalUrl, ip, headers } = request;
     const startTime = Date.now();
     const userAgent = headers['user-agent'] || 'unknown';
-    const requestId = headers['x-request-id'] || `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const requestId =
+      headers['x-request-id'] ||
+      `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
     // Add request ID to response headers
     response.setHeader('X-Request-ID', requestId.toString());

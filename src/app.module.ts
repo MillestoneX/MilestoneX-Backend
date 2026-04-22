@@ -5,10 +5,14 @@ import { AppService } from './app.service';
 import { PrismaModule } from './database/prisma.module';
 import { RequestLoggerMiddleware } from './common/middleware';
 import { winstonConfig } from './config/winston.config';
+import { AppConfigurationModule } from './config/app-configuration.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
+    AppConfigurationModule,
     PrismaModule,
+    AuthModule,
     WinstonModule.forRoot(winstonConfig),
   ],
   controllers: [AppController],
