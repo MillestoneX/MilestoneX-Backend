@@ -1,1 +1,1 @@
-// Interceptors will be exported here
+export * from './logging.interceptor';
