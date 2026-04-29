@@ -13,6 +13,7 @@ import { AdminModule } from './modules/admin/admin.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { DonationsModule } from './modules/donations/donations.module';
 import { WithdrawalsModule } from './modules/withdrawals/withdrawals.module';
+import { QueueModule } from './modules/queue/queue.module';
 import { JwtAuthGuard, RolesGuard } from './modules/auth';
 
 @Module({
@@ -25,6 +26,7 @@ import { JwtAuthGuard, RolesGuard } from './modules/auth';
     ProjectsModule,
     DonationsModule,
     WithdrawalsModule,
+    QueueModule,
     WinstonModule.forRoot(winstonConfig),
   ],
   controllers: [AppController],
