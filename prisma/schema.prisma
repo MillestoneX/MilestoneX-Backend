@@ -1,0 +1,88 @@
+// Prisma schema for StellarAid API
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Placeholder models - to be expanded as feature modules are implemented.
+// Roles reflect the StellarAid domain (donors, creators, admins) and are kept
+// intentionally minimal here so initial migrations succeed.
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  DONOR
+  CREATOR
+  ADMIN
+}
+
+enum ProjectStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  COMPLETED
+  REJECTED
+}
+
+enum DonationStatus {
+  PENDING
+  CONFIRMED
+  FAILED
+}
+
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  name          String?
+  role          UserRole   @default(DONOR)
+  walletAddress String?    @unique
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  projects      Project[]  @relation("ProjectCreator")
+  donations     Donation[]
+
+  @@map("users")
+}
+
+model Project {
+  id          String         @id @default(uuid())
+  title       String
+  description String
+  goalAmount  Decimal        @db.Decimal(20, 7)
+  status      ProjectStatus  @default(DRAFT)
+  creatorId   String
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  creator     User           @relation("ProjectCreator", fields: [creatorId], references: [id])
+  donations   Donation[]
+
+  @@index([creatorId])
+  @@map("projects")
+}
+
+model Donation {
+  id          String          @id @default(uuid())
+  amount      Decimal         @db.Decimal(20, 7)
+  assetCode   String          @default("XLM")
+  txHash      String?         @unique
+  status      DonationStatus  @default(PENDING)
+  donorId     String
+  projectId   String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  donor       User            @relation(fields: [donorId], references: [id])
+  project     Project         @relation(fields: [projectId], references: [id])
+
+  @@index([donorId])
+  @@index([projectId])
+  @@map("donations")
+}
