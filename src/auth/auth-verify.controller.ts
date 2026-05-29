@@ -4,9 +4,11 @@ import {
   Body,
   UnauthorizedException,
   BadRequestException,
+  Inject,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Keypair, StrKey } from '@stellar/stellar-sdk';
+import { UsersService } from '../users/users.service';
 
 interface VerifyDto {
   walletAddress: string;
@@ -27,10 +29,13 @@ interface AuthResponse {
  */
 @Controller('auth')
 export class AuthVerifyController {
-  constructor(private readonly jwt: JwtService) {}
+  constructor(
+    private readonly jwt: JwtService,
+    @Inject() private readonly usersService: UsersService,
+  ) {}
 
   @Post('verify')
-  verify(@Body() dto: VerifyDto): AuthResponse {
+  async verify(@Body() dto: VerifyDto): Promise<AuthResponse> {
     const { walletAddress, signedChallenge, challenge } = dto;
 
     if (!walletAddress || !StrKey.isValidEd25519PublicKey(walletAddress)) {
@@ -48,6 +53,9 @@ export class AuthVerifyController {
     if (!valid) {
       throw new UnauthorizedException('Signature verification failed');
     }
+
+    // Get or create user
+    await this.usersService.getOrCreateUser(walletAddress);
 
     const accessToken = this.jwt.sign({ sub: walletAddress, walletAddress });
     return { accessToken, tokenType: 'Bearer' };

@@ -70,21 +70,32 @@ enum AuditActionType {
   ADMIN_ACTION
 }
 
+enum KYCStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 // ---------------------------------------------------------------------------
 // MODELS: Define all database models with relationships and constraints
 // ---------------------------------------------------------------------------
 
 /// User model representing donors, creators, and administrators
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  name          String?
-  role          UserRole @default(DONOR)
-  walletAddress String?  @unique
-  bio           String?
-  isActive      Boolean  @default(true)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              String    @id @default(uuid())
+  email           String    @unique
+  name            String?
+  displayName     String?
+  role            UserRole  @default(DONOR)
+  walletAddress   String?   @unique
+  bio             String?
+  avatarUrl       String?
+  socialLinks     String?   // JSON stringified object
+  kycStatus       KYCStatus @default(PENDING)
+  verifiedStatus  Boolean   @default(false)
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   // Relations
   campaigns     Campaign[]     @relation("CampaignCreator")
@@ -98,6 +109,7 @@ model User {
   @@index([email])
   @@index([role])
   @@index([isActive])
+  @@index([kycStatus])
   @@map("users")
 }
 
