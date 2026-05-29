@@ -7,6 +7,12 @@ import {
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { Keypair, StrKey } from '@stellar/stellar-sdk';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBody,
+} from '@nestjs/swagger';
 
 interface VerifyDto {
   walletAddress: string;
@@ -16,20 +22,29 @@ interface VerifyDto {
 
 interface AuthResponse {
   accessToken: string;
-  tokenType: 'Bearer';
+  tokenType: 'Bearer' | 'bearer';
 }
 
-/**
- * POST /auth/verify
- *
- * Accepts { walletAddress, signedChallenge, challenge }, verifies the
- * Ed25519 signature using stellar-sdk, and returns a signed JWT on success.
- */
+@ApiTags('auth')
 @Controller('auth')
 export class AuthVerifyController {
   constructor(private readonly jwt: JwtService) {}
 
   @Post('verify')
+  @ApiOperation({ summary: 'Verify wallet signature and get JWT token' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        walletAddress: { type: 'string', example: 'G...wallet-address' },
+        signedChallenge: { type: 'string', example: 'base64-encoded-signature' },
+        challenge: { type: 'string', example: 'stellaraid:login:abc123:1234567890' },
+      },
+    },
+  })
+  @ApiResponse({ status: 200, description: 'Returns JWT access token' })
+  @ApiResponse({ status: 400, description: 'Invalid wallet address or missing fields' })
+  @ApiResponse({ status: 401, description: 'Signature verification failed' })
   verify(@Body() dto: VerifyDto): AuthResponse {
     const { walletAddress, signedChallenge, challenge } = dto;
 
