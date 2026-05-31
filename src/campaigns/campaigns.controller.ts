@@ -11,6 +11,8 @@ import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CampaignsService } from './campaigns.service';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
+import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { Body, Post } from '@nestjs/common';
 
 const FORBIDDEN_FIELDS = [
   'goalAmount',
@@ -23,6 +25,15 @@ const FORBIDDEN_FIELDS = [
 @UseGuards(JwtAuthGuard)
 export class CampaignsController {
   constructor(private readonly campaigns: CampaignsService) {}
+
+  @Post()
+  async create(
+    @Body() body: CreateCampaignDto,
+    @Req() req: Request & { user: any },
+  ) {
+    const userId = req.user?.sub as string;
+    return this.campaigns.createCampaign(userId, body);
+  }
 
   @Patch(':id')
   async update(
