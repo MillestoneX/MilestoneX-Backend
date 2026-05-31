@@ -2,6 +2,7 @@ export interface JwtPayload {
   sub: string; // user id
   email: string;
   walletAddress: string;
+  role?: string; // 'creator' | 'admin' | 'donor'
 }
 
 export interface AuthResponse {
