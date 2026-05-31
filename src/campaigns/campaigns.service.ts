@@ -9,7 +9,7 @@ export class CampaignsService {
 
   /**
    * Browse public campaigns with pagination, filtering, and sorting
-   * Excludes DRAFT and SUSPENDED campaigns
+   * Excludes DRAFT campaigns from public listing
    */
   async browseCampaigns(
     query: BrowseCampaignsQueryDto,
@@ -19,9 +19,9 @@ export class CampaignsService {
 
     // Build where clause
     const where: Prisma.CampaignWhereInput = {
-      // Always exclude DRAFT and SUSPENDED campaigns
+      // Always exclude DRAFT campaigns
       status: {
-        notIn: ['DRAFT', 'SUSPENDED'],
+        not: 'DRAFT',
       },
     };
 
