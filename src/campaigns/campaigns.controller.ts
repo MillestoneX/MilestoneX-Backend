@@ -7,6 +7,7 @@ import {
   UseGuards,
   BadRequestException,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CampaignsService } from './campaigns.service';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
