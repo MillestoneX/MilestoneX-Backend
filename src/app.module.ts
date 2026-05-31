@@ -9,6 +9,7 @@ import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
 import { AppThrottlerModule } from './throttler/throttler.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
+import { CampaignsModule } from './campaigns/campaigns.module';
 
 @Module({
   imports: [
@@ -23,7 +24,7 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
     AppThrottlerModule,
     ApiKeysModule,
     // Campaigns module
-    require('./campaigns/campaigns.module').CampaignsModule,
+    CampaignsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
