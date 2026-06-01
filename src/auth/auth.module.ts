@@ -1,24 +1,23 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { ConfigService } from '@nestjs/config';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { JwtStrategy } from './strategies/jwt.strategy';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { PrismaModule } from '../prisma/prisma.module';
+import { AuthChallengeController } from './auth-challenge.controller';
+import { AuthVerifyController } from './auth-verify.controller';
 
 @Module({
   imports: [
     JwtModule.registerAsync({
-      useFactory: (configService: ConfigService) => ({
-        secret: configService.get<string>('jwtSecret'),
-        signOptions: {
-          expiresIn: configService.get<string>('jwtExpiresIn') || '1d',
-        },
-      }),
+      imports: [ConfigModule],
       inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        secret: config.get<string>('JWT_SECRET', 'stellaraid-default-secret'),
+        signOptions: { expiresIn: '15m' },
+      }),
     }),
+    PrismaModule,
   ],
-  controllers: [AuthController],
-  providers: [AuthService, JwtStrategy],
-  exports: [AuthService],
+  controllers: [AuthChallengeController, AuthVerifyController],
+  exports: [JwtModule],
 })
 export class AuthModule {}
