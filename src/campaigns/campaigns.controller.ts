@@ -1,19 +1,22 @@
 import {
   Controller,
   Get,
+  Param,
+  UseGuards,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
-  Param,
   Body,
   Req,
-  UseGuards,
   BadRequestException,
   Inject,
 } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
+import { AuthGuard } from '@nestjs/passport';
 import { CampaignsService } from './campaigns.service';
+import { CampaignStats } from './interfaces/campaign-stats.interface';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { BrowseCampaignsQueryDto, BrowseCampaignsResponseDto } from './dto/browse-campaigns.dto';
@@ -28,7 +31,15 @@ const FORBIDDEN_FIELDS = [
 ];
 
 @Controller('campaigns')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CampaignsController {
+
+  @Get(':id/stats')
+  @Roles('creator', 'admin')
+  async getCampaignStats(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CampaignStats> {
+    return this.campaignsService.getCampaignStats(id);
   constructor(
     private readonly campaignsService: CampaignsService,
     private readonly donationsService: DonationsService,

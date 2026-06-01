@@ -1,13 +1,19 @@
 import { Module } from '@nestjs/common';
-import { CampaignsController } from './campaigns.controller';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Campaign } from './entities/campaign.entity';
+import { Donation } from '../donations/entities/donation.entity';
 import { CampaignsService } from './campaigns.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { DonationsModule } from '../donations/donations.module';
+import { CampaignsController } from './campaigns.controller';
+
 
 @Module({
-  imports: [PrismaModule, DonationsModule],
+  imports: [],
+
+@Module({
+  imports: [TypeOrmModule.forFeature([Campaign, Donation]), PrismaModule, DonationsModule],
   controllers: [CampaignsController],
   providers: [CampaignsService],
-  exports: [CampaignsService],
 })
 export class CampaignsModule {}
