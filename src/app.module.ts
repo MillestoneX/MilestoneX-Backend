@@ -7,11 +7,11 @@ import { QueueModule } from './queue/queue.module';
 import { RedisModule } from './redis/redis.module';
 import { HealthModule } from './health/health.module';
 import { AuthModule } from './auth/auth.module';
-import { AppThrottlerModule } from './throttler/throttler.module';
-import { ApiKeysModule } from './api-keys/api-keys.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
-import { DonationsModule } from './donations/donations.module';
 import { StellarModule } from './stellar/stellar.module';
+import { AdminModule } from './admin/admin.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { DonationsModule } from './donations/donations.module';
 
 @Module({
   imports: [
@@ -23,9 +23,11 @@ import { StellarModule } from './stellar/stellar.module';
     RedisModule,
     HealthModule,
     AuthModule,
+    
+    AdminModule,
+    NotificationsModule,
     AppThrottlerModule,
     ApiKeysModule,
-    // Campaigns module
     CampaignsModule,
     DonationsModule,
     StellarModule,

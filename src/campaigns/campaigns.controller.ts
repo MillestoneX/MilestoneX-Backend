@@ -2,22 +2,30 @@ import {
   BadRequestException,
   Controller,
   Get,
-  Inject,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Query,
+  Body,
   Req,
+  BadRequestException,
+  Inject,
   UseGuards,
 } from '@nestjs/common';
 import Keyv from 'keyv';
+import { AuthGuard } from '@nestjs/passport';
 import { CampaignsService } from './campaigns.service';
+import { CampaignStats } from './interfaces/campaign-stats.interface';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { Body } from '@nestjs/common';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { AdminGuard } from '../users/guards/admin.guard';
+import { BrowseCampaignsQueryDto, BrowseCampaignsResponseDto } from './dto/browse-campaigns.dto';
 
 const FORBIDDEN_FIELDS = [
   'goalAmount',
@@ -26,15 +34,22 @@ const FORBIDDEN_FIELDS = [
   'milestones',
   'endDate',
 ];
-import { BrowseCampaignsQueryDto, BrowseCampaignsResponseDto } from './dto/browse-campaigns.dto';
 
 const CACHE_MANAGER = 'CACHE_MANAGER';
 
 @Controller('campaigns')
+@UseGuards(AuthGuard('jwt'), RolesGuard)
 export class CampaignsController {
+
+  @Get(':id/stats')
+  @Roles('creator', 'admin')
+  async getCampaignStats(
+    @Param('id', ParseUUIDPipe) id: string,
+  ): Promise<CampaignStats> {
+    return this.campaignsService.getCampaignStats(id);
   constructor(
     private readonly campaignsService: CampaignsService,
-    @Inject(CACHE_MANAGER) private cacheManager: Keyv,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   @Post()
@@ -54,7 +69,6 @@ export class CampaignsController {
     @Body() body: UpdateCampaignDto,
     @Req() req: Request & { user: any },
   ) {
-    // Reject attempts to update forbidden fields
     const sentKeys = Object.keys(body || {});
     const illegal = sentKeys.filter((k) => FORBIDDEN_FIELDS.includes(k));
     if (illegal.length > 0) {
@@ -63,34 +77,23 @@ export class CampaignsController {
       );
     }
 
-    const userId = req.user?.sub as string;
-    return this.campaignsService.updateCampaign(userId, id, body);
+    return this.campaignsService.updateCampaign(req.user.id, id, body);
   }
 
-  /**
-   * GET /campaigns
-   * Browse public campaigns with pagination, filtering, and sorting
-   * Query params: page, limit, category, status, search, sortBy
-   * Cached for 30 seconds
-   */
   @Get()
   async browseCampaigns(
     @Query() query: BrowseCampaignsQueryDto,
   ): Promise<BrowseCampaignsResponseDto> {
-    // Generate cache key based on query parameters
     const cacheKey = this.generateCacheKey(query);
 
-    // Try to get from cache
-    const cached =
-      (await this.cacheManager.get(cacheKey)) as BrowseCampaignsResponseDto | undefined;
+    const cached = await this.cacheManager.get<BrowseCampaignsResponseDto>(
+      cacheKey,
+    );
     if (cached) {
       return cached;
     }
 
-    // If not cached, fetch from service
     const result = await this.campaignsService.browseCampaigns(query);
-
-    // Cache the result for 30 seconds
     await this.cacheManager.set(cacheKey, result, 30000);
 
     return result;
@@ -112,17 +115,9 @@ export class CampaignsController {
       `sortBy:${query.sortBy}`,
     ];
 
-    if (query.category) {
-      parts.push(`category:${query.category}`);
-    }
-
-    if (query.status) {
-      parts.push(`status:${query.status}`);
-    }
-
-    if (query.search) {
-      parts.push(`search:${query.search}`);
-    }
+    if (query.category) parts.push(`category:${query.category}`);
+    if (query.status) parts.push(`status:${query.status}`);
+    if (query.search) parts.push(`search:${query.search}`);
 
     return parts.join(':');
   }
