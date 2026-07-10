@@ -35,6 +35,18 @@ export class CampaignsService {
         'goalAmount is required and must be greater than 0',
       );
     }
+
+    // Validate endDate is in the future if provided
+    if (dto.endDate) {
+      const endDate = new Date(dto.endDate);
+      if (isNaN(endDate.getTime())) {
+        throw new BadRequestException('endDate must be a valid ISO date string');
+      }
+      if (endDate <= new Date()) {
+        throw new BadRequestException('Campaign end date must be in the future');
+      }
+    }
+
     const milestoneCreates = (dto.milestones || []).map((m) => ({
       title: m.title,
       description: m.description ?? null,
