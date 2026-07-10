@@ -72,9 +72,13 @@ export class NotificationsGateway
 
       const payload = this.jwtService.verify(token, { secret });
 
-      const userId = (payload as Record<string, unknown>).sub as string;
-      if (!userId) {
+      if (!payload || typeof payload !== 'object') {
         throw new UnauthorizedException('Invalid token payload');
+      }
+
+      const userId = (payload as Record<string, unknown>).sub as string;
+      if (!userId || typeof userId !== 'string') {
+        throw new UnauthorizedException('Invalid token payload: missing sub');
       }
 
       // Subscribe the socket to a private room keyed by userId
