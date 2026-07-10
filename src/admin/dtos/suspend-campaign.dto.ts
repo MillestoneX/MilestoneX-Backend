@@ -8,7 +8,8 @@ import { ApiProperty } from '@nestjs/swagger';
  */
 export class SuspendCampaignDto {
   @ApiProperty({
-    description: 'Reason for the suspension (stored in audit log and sent to creator)',
+    description:
+      'Reason for the suspension (stored in audit log and sent to creator)',
     example: 'Campaign violates community guidelines section 3.2',
     maxLength: 500,
   })

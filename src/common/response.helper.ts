@@ -41,6 +41,9 @@ export function ok<T>(
  * Wrap a created resource into a success response.
  * Semantically identical to ok() but communicates intent at the call site.
  */
-export function created<T>(data: T, message = 'Resource created'): ApiResponse<T> {
+export function created<T>(
+  data: T,
+  message = 'Resource created',
+): ApiResponse<T> {
   return ok(data, message);
 }

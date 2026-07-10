@@ -4,7 +4,10 @@ import { Transform } from 'class-transformer';
 
 /** DTO for updating the authenticated user's profile */
 export class UpdateUserDto {
-  @ApiPropertyOptional({ description: 'Display name shown publicly', maxLength: 100 })
+  @ApiPropertyOptional({
+    description: 'Display name shown publicly',
+    maxLength: 100,
+  })
   @IsOptional()
   @IsString()
   @MaxLength(100)
@@ -23,7 +26,8 @@ export class UpdateUserDto {
   avatarUrl?: string;
 
   @ApiPropertyOptional({
-    description: 'Social links as a key/value object (e.g. { twitter: "...", github: "..." })',
+    description:
+      'Social links as a key/value object (e.g. { twitter: "...", github: "..." })',
   })
   @IsOptional()
   socialLinks?: Record<string, string>;

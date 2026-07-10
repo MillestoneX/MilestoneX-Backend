@@ -29,7 +29,8 @@ export const ERR = {
   MILESTONE_WRONG_CAMPAIGN: 'Milestone does not belong to this campaign',
   MILESTONE_NOT_UNLOCKED: (status: string) =>
     `Milestone must be in UNLOCKED status. Current status: ${status}`,
-  MILESTONE_PENDING_RELEASE: 'There is already a pending fund release for this milestone',
+  MILESTONE_PENDING_RELEASE:
+    'There is already a pending fund release for this milestone',
   MILESTONE_TARGET_AMOUNT_INVALID: (min: number) =>
     `milestone targetAmount is required and must be at least ${min}`,
   MILESTONE_DUE_DATE_PAST: 'Milestone due date must be in the future',
@@ -51,7 +52,8 @@ export const ERR = {
   FUND_RELEASE_CANCEL_INVALID: (status: string) =>
     `Cannot cancel fund release with status ${status}`,
   FUND_RELEASE_NOT_CREATOR: 'Only the creator can cancel this fund release',
-  FUND_RELEASE_EXCEEDS_AVAILABLE: 'Release amount exceeds available campaign funds',
+  FUND_RELEASE_EXCEEDS_AVAILABLE:
+    'Release amount exceeds available campaign funds',
 
   // ─── Dispute ─────────────────────────────────────────────────────────────
   DISPUTE_NOT_FOUND: 'Dispute not found',

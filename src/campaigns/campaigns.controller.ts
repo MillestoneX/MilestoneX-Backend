@@ -142,7 +142,9 @@ export class CampaignsController {
    * Fetch on-chain balances for the campaign's Stellar contract account.
    * Discrepancies between on-chain and stored amounts are flagged and auto-corrected.
    */
-  @ApiOperation({ summary: 'Fetch on-chain contract balance and detect discrepancies' })
+  @ApiOperation({
+    summary: 'Fetch on-chain contract balance and detect discrepancies',
+  })
   @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Get(':id/contract-balance')
   async getContractBalance(
@@ -155,7 +157,9 @@ export class CampaignsController {
    * GET /campaigns/:campaignId/donations
    * Get paginated donations for a campaign (public leaderboard)
    */
-  @ApiOperation({ summary: 'Get paginated donation leaderboard for a campaign' })
+  @ApiOperation({
+    summary: 'Get paginated donation leaderboard for a campaign',
+  })
   @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @Get(':campaignId/donations')
   async getCampaignDonations(

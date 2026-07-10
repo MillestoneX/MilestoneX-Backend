@@ -57,13 +57,20 @@ describe('DonationsService – createDonation', () => {
 
   it('throws BadRequestException when walletAddress is empty', async () => {
     await expect(
-      service.createDonation('', { txHash: 'abc', campaignId: 'c1', amount: '10' } as any),
+      service.createDonation('', {
+        txHash: 'abc',
+        campaignId: 'c1',
+        amount: '10',
+      } as any),
     ).rejects.toThrow(BadRequestException);
   });
 
   it('throws BadRequestException when txHash is missing', async () => {
     await expect(
-      service.createDonation('GADDR', { campaignId: 'c1', amount: '10' } as any),
+      service.createDonation('GADDR', {
+        campaignId: 'c1',
+        amount: '10',
+      } as any),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -89,7 +96,7 @@ describe('DonationsService – createDonation', () => {
       txHash: 'tx123',
       campaignId: 'c1',
       amount: '10',
-    } as any);
+    });
 
     expect(result.donation.id).toBe('d1');
     expect(result.donation.recovered).toBe(false);
@@ -134,7 +141,10 @@ describe('DonationsService – createDonation', () => {
       acceptedAssets: [{ assetType: 'native' }],
     });
     mockStellarTxs.verifyDonationTransaction.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ id: 'u1', walletAddress: 'GADDR' });
+    mockPrisma.user.findUnique.mockResolvedValue({
+      id: 'u1',
+      walletAddress: 'GADDR',
+    });
     const createdDonation = {
       id: 'new_d1',
       amount: { toString: () => '10' },
@@ -157,10 +167,12 @@ describe('DonationsService – createDonation', () => {
       txHash: 'newtx',
       campaignId: 'c1',
       amount: '10',
-    } as any);
+    });
 
     expect(result.donation.id).toBe('new_d1');
     expect(result.donation.status).toBe('CONFIRMED');
-    expect(mockCampaignsService.recalculateCampaignStats).toHaveBeenCalledWith('c1');
+    expect(mockCampaignsService.recalculateCampaignStats).toHaveBeenCalledWith(
+      'c1',
+    );
   });
 });

@@ -76,7 +76,10 @@ export class DonationReceiptService {
       );
     }
 
-    const dateStr = donation.donatedAt.toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = donation.donatedAt
+      .toISOString()
+      .slice(0, 10)
+      .replace(/-/g, '');
     const receiptNumber = `REC-${donation.id.slice(0, 8).toUpperCase()}-${dateStr}`;
 
     this.logger.log(

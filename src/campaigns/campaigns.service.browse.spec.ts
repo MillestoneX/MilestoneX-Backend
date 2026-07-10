@@ -67,7 +67,12 @@ describe('CampaignsService – browseCampaigns', () => {
 
   it('throws BadRequestException when search is fewer than 3 chars', async () => {
     await expect(
-      service.browseCampaigns({ page: 1, limit: 10, search: 'ab', sortBy: 'newest' }),
+      service.browseCampaigns({
+        page: 1,
+        limit: 10,
+        search: 'ab',
+        sortBy: 'newest',
+      }),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -89,7 +94,11 @@ describe('CampaignsService – browseCampaigns', () => {
   it('returns empty data when no campaigns match', async () => {
     mockPrisma.$transaction.mockResolvedValue([0, []]);
 
-    const result = await service.browseCampaigns({ page: 1, limit: 10, sortBy: 'newest' });
+    const result = await service.browseCampaigns({
+      page: 1,
+      limit: 10,
+      sortBy: 'newest',
+    });
 
     expect(result.data).toHaveLength(0);
     expect(result.total).toBe(0);

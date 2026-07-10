@@ -40,10 +40,14 @@ export class CampaignsService {
     if (dto.endDate) {
       const endDate = new Date(dto.endDate);
       if (isNaN(endDate.getTime())) {
-        throw new BadRequestException('endDate must be a valid ISO date string');
+        throw new BadRequestException(
+          'endDate must be a valid ISO date string',
+        );
       }
       if (endDate <= new Date()) {
-        throw new BadRequestException('Campaign end date must be in the future');
+        throw new BadRequestException(
+          'Campaign end date must be in the future',
+        );
       }
     }
 
@@ -92,14 +96,18 @@ export class CampaignsService {
     }
 
     if (campaign.creatorId !== userId) {
-      throw new ForbiddenException('Only the campaign creator can update this campaign');
+      throw new ForbiddenException(
+        'Only the campaign creator can update this campaign',
+      );
     }
 
     // Validate new endDate if provided
     if (dto.endDate) {
       const endDate = new Date(dto.endDate);
       if (isNaN(endDate.getTime()) || endDate <= new Date()) {
-        throw new BadRequestException('Campaign end date must be in the future');
+        throw new BadRequestException(
+          'Campaign end date must be in the future',
+        );
       }
     }
 
@@ -200,7 +208,10 @@ export class CampaignsService {
 
     return rows
       .filter((r) => r.category)
-      .map((r) => ({ category: r.category as string, count: r._count.category }));
+      .map((r) => ({
+        category: r.category as string,
+        count: r._count.category,
+      }));
   }
 
   /** Returns up to 6 featured, non-DRAFT campaigns sorted by recent activity */
@@ -437,7 +448,10 @@ export class CampaignsService {
     const goalAmount = Number(campaign.goalAmount);
     const progressPercentage =
       goalAmount > 0
-        ? Math.min(100, parseFloat(((totalRaised / goalAmount) * 100).toFixed(2)))
+        ? Math.min(
+            100,
+            parseFloat(((totalRaised / goalAmount) * 100).toFixed(2)),
+          )
         : 0;
 
     return {

@@ -74,7 +74,9 @@ export class CreateCampaignDto {
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
   category?: string;
 
-  @ApiPropertyOptional({ description: 'Fundraising goal amount (numeric string)' })
+  @ApiPropertyOptional({
+    description: 'Fundraising goal amount (numeric string)',
+  })
   @IsOptional()
   @IsString()
   goalAmount?: string;
@@ -86,7 +88,9 @@ export class CreateCampaignDto {
   @Type(() => MilestoneInput)
   milestones?: MilestoneInput[];
 
-  @ApiPropertyOptional({ description: 'Accepted asset codes (e.g. XLM, USDC:issuer)' })
+  @ApiPropertyOptional({
+    description: 'Accepted asset codes (e.g. XLM, USDC:issuer)',
+  })
   @IsOptional()
   @IsArray()
   acceptedAssets?: string[];

@@ -1,4 +1,10 @@
-import { IsOptional, IsString, MaxLength, IsUrl, IsDateString } from 'class-validator';
+import {
+  IsOptional,
+  IsString,
+  MaxLength,
+  IsUrl,
+  IsDateString,
+} from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /** DTO for updating an existing campaign (partial update) */
@@ -15,7 +21,9 @@ export class UpdateCampaignDto {
   description?: string;
 
   /** Some clients send a 'story' field — treat as an alias for description */
-  @ApiPropertyOptional({ description: 'Campaign story (alias for description)' })
+  @ApiPropertyOptional({
+    description: 'Campaign story (alias for description)',
+  })
   @IsOptional()
   @IsString()
   story?: string;

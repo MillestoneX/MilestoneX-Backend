@@ -8,13 +8,19 @@ export class FileDisputeDto {
   @IsNotEmpty()
   donationId: string;
 
-  @ApiProperty({ description: 'Short reason / category for the dispute', maxLength: 200 })
+  @ApiProperty({
+    description: 'Short reason / category for the dispute',
+    maxLength: 200,
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
   reason: string;
 
-  @ApiProperty({ description: 'Detailed description of the dispute', maxLength: 2000 })
+  @ApiProperty({
+    description: 'Detailed description of the dispute',
+    maxLength: 2000,
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)
@@ -23,7 +29,10 @@ export class FileDisputeDto {
 
 /** DTO for admin resolving a dispute */
 export class ResolveDisputeDto {
-  @ApiProperty({ description: 'Resolution details explaining the outcome', maxLength: 2000 })
+  @ApiProperty({
+    description: 'Resolution details explaining the outcome',
+    maxLength: 2000,
+  })
   @IsString()
   @IsNotEmpty()
   @MaxLength(2000)

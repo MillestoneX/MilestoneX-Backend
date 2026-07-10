@@ -220,7 +220,12 @@ export class UsersService {
       await this.prisma.$transaction([
         this.prisma.user.findUnique({
           where: { id: userId },
-          select: { id: true, displayName: true, walletAddress: true, createdAt: true },
+          select: {
+            id: true,
+            displayName: true,
+            walletAddress: true,
+            createdAt: true,
+          },
         }),
         this.prisma.campaign.aggregate({
           where: { creatorId: userId },

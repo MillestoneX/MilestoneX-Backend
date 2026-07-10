@@ -205,7 +205,7 @@ export class DonationsService {
 
       // Re-verify the transaction on-chain
       await this.stellarTxs.verifyDonationTransaction({
-        txHash: dto.txHash!,
+        txHash: dto.txHash,
         destination: campaign.contractId,
         amount: dto.amount,
         asset: requestedAsset,

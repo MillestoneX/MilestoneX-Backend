@@ -132,7 +132,10 @@ export class UsersController {
    * Poll the status of a queued export job.
    */
   @ApiOperation({ summary: 'Poll the status of an async export job' })
-  @ApiParam({ name: 'jobId', description: 'Bull job ID returned by the export endpoint' })
+  @ApiParam({
+    name: 'jobId',
+    description: 'Bull job ID returned by the export endpoint',
+  })
   @UseGuards(JwtAuthGuard)
   @Get('me/donations/export/:jobId/status')
   async getExportJobStatus(
@@ -165,7 +168,9 @@ export class UsersController {
   }
 
   /** PATCH /users/me/notification-preferences — Update preferences */
-  @ApiOperation({ summary: "Update the current user's notification preferences" })
+  @ApiOperation({
+    summary: "Update the current user's notification preferences",
+  })
   @UseGuards(JwtAuthGuard)
   @Patch('me/notification-preferences')
   async updateNotificationPreferences(
@@ -215,4 +220,3 @@ export class AdminUsersController {
     );
   }
 }
-

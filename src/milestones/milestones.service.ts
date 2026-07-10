@@ -256,7 +256,9 @@ export class MilestonesService {
     if (!dueDate) return;
     const date = new Date(dueDate);
     if (isNaN(date.getTime())) {
-      throw new BadRequestException('Milestone dueDate must be a valid ISO date string');
+      throw new BadRequestException(
+        'Milestone dueDate must be a valid ISO date string',
+      );
     }
     if (date <= new Date()) {
       throw new BadRequestException('Milestone due date must be in the future');
@@ -286,7 +288,9 @@ export class MilestonesService {
       throw new NotFoundException('Campaign not found');
     }
     if (campaign.creatorId !== creatorId) {
-      throw new ForbiddenException('Only the campaign creator can complete milestones');
+      throw new ForbiddenException(
+        'Only the campaign creator can complete milestones',
+      );
     }
 
     const milestone = await this.prisma.milestone.findUnique({
@@ -296,7 +300,9 @@ export class MilestonesService {
       throw new NotFoundException('Milestone not found');
     }
     if (milestone.campaignId !== campaignId) {
-      throw new BadRequestException('Milestone does not belong to this campaign');
+      throw new BadRequestException(
+        'Milestone does not belong to this campaign',
+      );
     }
     if (!['ACTIVE', 'UNLOCKED'].includes(milestone.status)) {
       throw new BadRequestException(

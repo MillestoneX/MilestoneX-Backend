@@ -50,6 +50,8 @@ export function assertValidStatusTransition(
 /**
  * Returns the list of valid next statuses for a given current status.
  */
-export function getAllowedTransitions(current: CampaignStatus): CampaignStatus[] {
+export function getAllowedTransitions(
+  current: CampaignStatus,
+): CampaignStatus[] {
   return ALLOWED_TRANSITIONS[current] ?? [];
 }

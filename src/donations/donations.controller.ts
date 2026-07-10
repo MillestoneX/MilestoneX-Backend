@@ -33,19 +33,24 @@ export class DonationsController {
    * POST /donations — Submit a new on-chain donation.
    * Verifies the Stellar transaction before persisting.
    */
-  @ApiOperation({ summary: 'Create a new donation (verifies on-chain transaction)' })
+  @ApiOperation({
+    summary: 'Create a new donation (verifies on-chain transaction)',
+  })
   @Post()
   @UseGuards(JwtAuthGuard)
   async create(
     @Req() req: Request & { user: any },
     @Body() dto: CreateDonationDto,
-  ): Promise<{ donation: DonationResponseDto; tip: PlatformTipResponseDto | null }> {
+  ): Promise<{
+    donation: DonationResponseDto;
+    tip: PlatformTipResponseDto | null;
+  }> {
     const walletAddress = String(req.user?.walletAddress ?? '');
     return this.donationsService.createDonation(walletAddress, dto);
   }
 
   /** GET /donations/me — Get all donations for the authenticated user */
-  @ApiOperation({ summary: "Get all donations for the current user" })
+  @ApiOperation({ summary: 'Get all donations for the current user' })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMyDonations(@Request() req: ExpressRequest & { user: any }) {
@@ -70,7 +75,9 @@ export class DonationsController {
    * POST /donations/:txHash/verify — Re-verify a transaction on-chain.
    * Updates donation/tip status based on latest Stellar state.
    */
-  @ApiOperation({ summary: 'Re-verify a Stellar transaction and update donation status' })
+  @ApiOperation({
+    summary: 'Re-verify a Stellar transaction and update donation status',
+  })
   @ApiParam({ name: 'txHash', description: 'Stellar transaction hash' })
   @UseGuards(JwtAuthGuard)
   @Post(':txHash/verify')

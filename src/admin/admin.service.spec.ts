@@ -61,7 +61,12 @@ describe('AdminService – refundDonation', () => {
   });
 
   it('throws BadRequestException when donation is not CONFIRMED', async () => {
-    const pendingDonation = { id: 'd1', status: 'PENDING', campaignId: 'c1', amount: '10' };
+    const pendingDonation = {
+      id: 'd1',
+      status: 'PENDING',
+      campaignId: 'c1',
+      amount: '10',
+    };
 
     mockPrisma.$transaction.mockImplementation(async (fn: any) => {
       const txMock = {
@@ -128,7 +133,12 @@ describe('AdminService – suspendCampaign', () => {
     mockPrisma.campaign.findUnique.mockResolvedValue(null);
 
     await expect(
-      service.suspendCampaign('nonexistent', { reason: 'spam' } as any, 'admin1', 'admin@test.com'),
+      service.suspendCampaign(
+        'nonexistent',
+        { reason: 'spam' } as any,
+        'admin1',
+        'admin@test.com',
+      ),
     ).rejects.toThrow(NotFoundException);
   });
 
@@ -141,7 +151,12 @@ describe('AdminService – suspendCampaign', () => {
     });
 
     await expect(
-      service.suspendCampaign('c1', { reason: 'spam' } as any, 'admin1', 'admin@test.com'),
+      service.suspendCampaign(
+        'c1',
+        { reason: 'spam' } as any,
+        'admin1',
+        'admin@test.com',
+      ),
     ).rejects.toThrow(BadRequestException);
   });
 
@@ -154,11 +169,13 @@ describe('AdminService – suspendCampaign', () => {
     });
     mockPrisma.campaign.update.mockResolvedValue({});
     mockPrisma.auditLog.create.mockResolvedValue({});
-    mockNotificationsService.sendCampaignSuspensionEmail.mockResolvedValue(undefined);
+    mockNotificationsService.sendCampaignSuspensionEmail.mockResolvedValue(
+      undefined,
+    );
 
     const result = await service.suspendCampaign(
       'c1',
-      { reason: 'TOS violation' } as any,
+      { reason: 'TOS violation' },
       'admin1',
       'admin@test.com',
     );

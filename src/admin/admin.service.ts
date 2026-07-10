@@ -100,7 +100,9 @@ export class AdminService {
       where: { donationId: dto.donationId },
     });
     if (existing) {
-      throw new BadRequestException('A dispute already exists for this donation');
+      throw new BadRequestException(
+        'A dispute already exists for this donation',
+      );
     }
 
     return this.prisma.dispute.create({
@@ -119,11 +121,7 @@ export class AdminService {
    * Resolve an open dispute (admin only).
    * Transitions status to RESOLVED and stamps resolvedAt.
    */
-  async resolveDispute(
-    disputeId: string,
-    adminId: string,
-    resolution: string,
-  ) {
+  async resolveDispute(disputeId: string, adminId: string, resolution: string) {
     const dispute = await this.prisma.dispute.findUnique({
       where: { id: disputeId },
     });
