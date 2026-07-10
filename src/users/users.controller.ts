@@ -30,6 +30,14 @@ import { AdminGuard } from './guards/admin.guard';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  /** GET /users/me/activity — Retrieve authenticated user's activity summary */
+  @UseGuards(JwtAuthGuard)
+  @Get('me/activity')
+  async getMyActivitySummary(@Request() req: any) {
+    const userId = req.user?.sub as string;
+    return this.usersService.getUserActivitySummary(userId);
+  }
+
   /** GET /users/me — Retrieve authenticated user's full profile */
   @UseGuards(JwtAuthGuard)
   @Get('me')

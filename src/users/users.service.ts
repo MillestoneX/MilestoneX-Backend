@@ -212,6 +212,70 @@ export class UsersService {
   }
 
   /**
+   * Get a summary of user activity: campaigns created, donations made,
+   * total raised, bookmarks, and recent actions.
+   */
+  async getUserActivitySummary(userId: string) {
+    const [user, campaignStats, donationStats, bookmarkCount, recentDonations] =
+      await this.prisma.$transaction([
+        this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, displayName: true, walletAddress: true, createdAt: true },
+        }),
+        this.prisma.campaign.aggregate({
+          where: { creatorId: userId },
+          _count: true,
+          _sum: { raisedAmount: true },
+        }),
+        this.prisma.donation.aggregate({
+          where: { donorId: userId, status: 'CONFIRMED' },
+          _count: true,
+          _sum: { amount: true },
+        }),
+        this.prisma.campaignBookmark.count({ where: { userId } }),
+        this.prisma.donation.findMany({
+          where: { donorId: userId, status: 'CONFIRMED' },
+          orderBy: { donatedAt: 'desc' },
+          take: 5,
+          select: {
+            id: true,
+            amount: true,
+            assetCode: true,
+            donatedAt: true,
+            campaign: { select: { id: true, title: true } },
+          },
+        }),
+      ]);
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    return {
+      userId: user.id,
+      displayName: user.displayName,
+      walletAddress: user.walletAddress,
+      memberSince: user.createdAt,
+      campaigns: {
+        total: campaignStats._count,
+        totalRaised: campaignStats._sum.raisedAmount?.toString() ?? '0',
+      },
+      donations: {
+        total: donationStats._count,
+        totalDonated: donationStats._sum.amount?.toString() ?? '0',
+      },
+      bookmarks: bookmarkCount,
+      recentDonations: recentDonations.map((d) => ({
+        id: d.id,
+        amount: d.amount.toString(),
+        assetCode: d.assetCode,
+        donatedAt: d.donatedAt,
+        campaignTitle: d.campaign?.title ?? 'Unknown',
+      })),
+    };
+  }
+
+  /**
    * Get or create user by wallet address
    */
   async getOrCreateUser(walletAddress: string, email?: string) {
