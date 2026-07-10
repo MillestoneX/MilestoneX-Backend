@@ -14,6 +14,13 @@ import {
   Inject,
   UseGuards,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
 import { CampaignsService } from './campaigns.service';
@@ -45,6 +52,8 @@ const FORBIDDEN_FIELDS = [
   'endDate',
 ];
 
+@ApiTags('Campaigns')
+@ApiBearerAuth()
 @Controller('campaigns')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class CampaignsController {
@@ -54,6 +63,8 @@ export class CampaignsController {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
+  @ApiOperation({ summary: 'Get campaign statistics (creator/admin only)' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Get(':id/stats')
   @Roles('creator', 'admin')
   async getCampaignStats(
@@ -62,7 +73,18 @@ export class CampaignsController {
     return this.campaignsService.getCampaignStats(id);
   }
 
+  /**
+   * GET /campaigns/categories
+   * Returns all distinct campaign categories with their campaign counts.
+   */
+  @ApiOperation({ summary: 'List all campaign categories with counts' })
+  @Get('categories')
+  async getCategories(): Promise<{ category: string; count: number }[]> {
+    return this.campaignsService.getCategories();
+  }
+
   /** POST /campaigns — Create a new fundraising campaign */
+  @ApiOperation({ summary: 'Create a new fundraising campaign' })
   @Post()
   @UseGuards(JwtAuthGuard)
   async create(
@@ -74,6 +96,8 @@ export class CampaignsController {
   }
 
   /** PATCH /campaigns/:id — Update campaign metadata (protected fields excluded) */
+  @ApiOperation({ summary: 'Update campaign metadata' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
   async update(
@@ -94,15 +118,7 @@ export class CampaignsController {
     return this.campaignsService.updateCampaign(userId, id, body);
   }
 
-  /**
-   * GET /campaigns/categories
-   * Returns all distinct campaign categories with their campaign counts.
-   */
-  @Get('categories')
-  async getCategories(): Promise<{ category: string; count: number }[]> {
-    return this.campaignsService.getCategories();
-  }
-
+  @ApiOperation({ summary: 'Browse and search public campaigns' })
   @Get()
   async browseCampaigns(
     @Query() query: BrowseCampaignsQueryDto,
@@ -126,6 +142,8 @@ export class CampaignsController {
    * Fetch on-chain balances for the campaign's Stellar contract account.
    * Discrepancies between on-chain and stored amounts are flagged and auto-corrected.
    */
+  @ApiOperation({ summary: 'Fetch on-chain contract balance and detect discrepancies' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Get(':id/contract-balance')
   async getContractBalance(
     @Param('id', ParseUUIDPipe) id: string,
@@ -137,6 +155,8 @@ export class CampaignsController {
    * GET /campaigns/:campaignId/donations
    * Get paginated donations for a campaign (public leaderboard)
    */
+  @ApiOperation({ summary: 'Get paginated donation leaderboard for a campaign' })
+  @ApiParam({ name: 'campaignId', description: 'Campaign UUID' })
   @Get(':campaignId/donations')
   async getCampaignDonations(
     @Param('campaignId') campaignId: string,
@@ -155,6 +175,8 @@ export class CampaignsController {
    * POST /campaigns/:id/updates
    * Create a campaign update. Creator-only.
    */
+  @ApiOperation({ summary: 'Create a campaign progress update (creator only)' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Post(':id/updates')
   @UseGuards(JwtAuthGuard)
   async createUpdate(
@@ -170,6 +192,7 @@ export class CampaignsController {
    * DELETE /campaigns/:id/updates/:updateId
    * Soft-delete a campaign update. Creator or admin.
    */
+  @ApiOperation({ summary: 'Soft-delete a campaign update' })
   @Delete(':id/updates/:updateId')
   @UseGuards(JwtAuthGuard)
   @HttpCode(204)
@@ -187,6 +210,9 @@ export class CampaignsController {
    * GET /campaigns/:id/updates
    * Public endpoint – returns paginated campaign updates sorted by createdAt DESC
    */
+  @ApiOperation({ summary: 'Get paginated campaign updates' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
   @Get(':id/updates')
   async getCampaignUpdates(
     @Param('id', ParseUUIDPipe) id: string,
@@ -206,10 +232,14 @@ export class CampaignsController {
   }
 }
 
+@ApiTags('Admin - Campaigns')
+@ApiBearerAuth()
 @Controller('admin/campaigns')
 export class AdminCampaignsController {
   constructor(private readonly campaignsService: CampaignsService) {}
 
+  @ApiOperation({ summary: 'Feature a campaign (admin only, max 6)' })
+  @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Post(':id/feature')
   @UseGuards(JwtAuthGuard, AdminGuard)
   async feature(@Param('id') id: string) {
