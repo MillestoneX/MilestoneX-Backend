@@ -9,6 +9,13 @@ import {
   Query,
   Res,
 } from '@nestjs/common';
+import {
+  ApiTags,
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
 import type { Response } from 'express';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -20,17 +27,19 @@ import {
 } from './dto/notification-preferences.dto';
 import {
   GetUserDonationsQueryDto,
-  GetUserDonationsResponseDto,
   ExportDonationHistoryQueryDto,
 } from './dto/get-user-donations.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   /** GET /users/me/activity — Retrieve authenticated user's activity summary */
+  @ApiOperation({ summary: "Get the current user's activity summary" })
   @UseGuards(JwtAuthGuard)
   @Get('me/activity')
   async getMyActivitySummary(@Request() req: any) {
@@ -39,6 +48,7 @@ export class UsersController {
   }
 
   /** GET /users/me — Retrieve authenticated user's full profile */
+  @ApiOperation({ summary: "Get the current user's full profile" })
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getMyProfile(@Request() req: any): Promise<UserProfileDto> {
@@ -46,6 +56,7 @@ export class UsersController {
   }
 
   /** PATCH /users/me — Update authenticated user's profile */
+  @ApiOperation({ summary: "Update the current user's profile" })
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   async updateMyProfile(
@@ -56,6 +67,7 @@ export class UsersController {
   }
 
   /** GET /users/me/donations — Retrieve donation history with filters */
+  @ApiOperation({ summary: "Get the current user's donation history" })
   @UseGuards(JwtAuthGuard)
   @Get('me/donations')
   async getMyDonations(
@@ -78,9 +90,11 @@ export class UsersController {
   /**
    * GET /users/me/donations/export
    * Export user's donation history as CSV.
-   * Small exports (<= 500 rows) are returned inline.
-   * Large exports are queued via Bull; a jobId is returned for polling.
    */
+  @ApiOperation({ summary: "Export the current user's donations as CSV" })
+  @ApiQuery({ name: 'campaignId', required: false })
+  @ApiQuery({ name: 'startDate', required: false })
+  @ApiQuery({ name: 'endDate', required: false })
   @UseGuards(JwtAuthGuard)
   @Get('me/donations/export')
   async exportMyDonations(
@@ -97,7 +111,6 @@ export class UsersController {
     );
 
     if (result.queued) {
-      // Large export — return 202 Accepted with jobId for polling
       res.status(202).json({
         message: 'Export queued. Poll the status endpoint for completion.',
         jobId: result.jobId,
@@ -106,7 +119,6 @@ export class UsersController {
       return;
     }
 
-    // Small export — return CSV inline
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader(
       'Content-Disposition',
@@ -118,8 +130,9 @@ export class UsersController {
   /**
    * GET /users/me/donations/export/:jobId/status
    * Poll the status of a queued export job.
-   * Returns the CSV when the job is complete.
    */
+  @ApiOperation({ summary: 'Poll the status of an async export job' })
+  @ApiParam({ name: 'jobId', description: 'Bull job ID returned by the export endpoint' })
   @UseGuards(JwtAuthGuard)
   @Get('me/donations/export/:jobId/status')
   async getExportJobStatus(
@@ -142,6 +155,7 @@ export class UsersController {
   }
 
   /** GET /users/me/notification-preferences — Retrieve preferences */
+  @ApiOperation({ summary: "Get the current user's notification preferences" })
   @UseGuards(JwtAuthGuard)
   @Get('me/notification-preferences')
   async getNotificationPreferences(
@@ -151,6 +165,7 @@ export class UsersController {
   }
 
   /** PATCH /users/me/notification-preferences — Update preferences */
+  @ApiOperation({ summary: "Update the current user's notification preferences" })
   @UseGuards(JwtAuthGuard)
   @Patch('me/notification-preferences')
   async updateNotificationPreferences(
@@ -164,6 +179,8 @@ export class UsersController {
   }
 
   /** GET /users/:walletAddress — Retrieve public user profile */
+  @ApiOperation({ summary: 'Get public profile for a user by wallet address' })
+  @ApiParam({ name: 'walletAddress', description: 'Stellar wallet address' })
   @Get(':walletAddress')
   async getPublicProfile(
     @Param('walletAddress') walletAddress: string,
@@ -172,6 +189,8 @@ export class UsersController {
   }
 }
 
+@ApiTags('Admin - Users')
+@ApiBearerAuth()
 @Controller('admin/users')
 export class AdminUsersController {
   constructor(private readonly usersService: UsersService) {}
@@ -180,6 +199,8 @@ export class AdminUsersController {
    * PATCH /admin/users/:id/kyc
    * Update user's KYC status (admin only)
    */
+  @ApiOperation({ summary: "Update a user's KYC status (admin only)" })
+  @ApiParam({ name: 'id', description: 'User UUID' })
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id/kyc')
   async updateKYCStatus(
@@ -194,3 +215,4 @@ export class AdminUsersController {
     );
   }
 }
+
