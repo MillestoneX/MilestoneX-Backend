@@ -89,7 +89,9 @@ export class CampaignsController {
       );
     }
 
-    return this.campaignsService.updateCampaign(req.user.id, id, body);
+    // Use req.user.sub (JWT subject = user UUID) instead of req.user.id
+    const userId = req.user?.sub as string;
+    return this.campaignsService.updateCampaign(userId, id, body);
   }
 
   @Get()
