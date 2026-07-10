@@ -242,6 +242,14 @@ export class StellarTransactionsService {
   }
 }
 
+/**
+ * Retry helper: calls `fn` up to `maxAttempts` times with exponential backoff.
+ * Retries only when `shouldRetry` returns true for the thrown error.
+ *
+ * @param maxAttempts  Maximum number of attempts (including the first call)
+ * @param fn           Async function to execute
+ * @param shouldRetry  Predicate — return true to retry, false to re-throw immediately
+ */
 async function withRetries<T>(
   maxAttempts: number,
   fn: () => Promise<T>,
@@ -273,6 +281,10 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/**
+ * Deep-equality check for two `StellarAcceptedAsset` values.
+ * Native assets compare by type only; credit assets require both code and issuer to match.
+ */
 function assetsEqual(
   a: StellarAcceptedAsset,
   b: StellarAcceptedAsset,
@@ -298,6 +310,11 @@ function assetFromOperation(op: any): StellarAcceptedAsset | null {
   return { assetType: 'credit', code, issuer };
 }
 
+/**
+ * Normalise a Stellar amount string so that trailing zeros after the decimal
+ * and leading zeros in the integer part are stripped before comparison.
+ * e.g. "100.5000000" → "100.5", "001" → "1"
+ */
 function normalizeAmount(amount: string): string {
   const trimmed = amount.trim();
   if (trimmed === '') return '';
