@@ -76,6 +76,14 @@ export class MilestonesService {
       );
     }
 
+    // Ensure the release amount does not exceed available (raised) campaign funds
+    const availableFunds = parseFloat(campaign.raisedAmount.toString());
+    if (releaseAmount > availableFunds) {
+      throw new BadRequestException(
+        `Release amount (${releaseAmount}) exceeds available campaign funds (${availableFunds})`,
+      );
+    }
+
     // Check if there's already a pending release for this milestone
     const existingRelease = await this.prisma.fundRelease.findFirst({
       where: {
