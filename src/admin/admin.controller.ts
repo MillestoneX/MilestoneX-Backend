@@ -1,6 +1,7 @@
 import {
   Controller,
   Post,
+  Patch,
   Param,
   Body,
   UseGuards,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { SuspendCampaignDto } from './dtos/suspend-campaign.dto';
+import { FileDisputeDto, ResolveDisputeDto } from './dtos/dispute.dto';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -34,10 +36,30 @@ export class AdminController {
       req.user.sub,
       req.user.email,
     );
-
-    // Note: If notificationSent is false, consider this a partial success
-    // The campaign is suspended but creator was not notified
-    // Frontend should check notificationSent flag and alert admin if false
     return result;
+  }
+
+  /** POST /admin/disputes/:id/resolve — Resolve a dispute (admin only) */
+  @Post('disputes/:id/resolve')
+  @HttpCode(HttpStatus.OK)
+  async resolveDispute(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ResolveDisputeDto,
+    @Request() req: any,
+  ) {
+    return this.adminService.resolveDispute(id, req.user.sub, dto.resolution);
+  }
+}
+
+/** Disputes controller — authenticated users can file disputes */
+@Controller('disputes')
+@UseGuards(JwtAuthGuard)
+export class DisputesController {
+  constructor(private readonly adminService: AdminService) {}
+
+  /** POST /disputes — File a new dispute against a donation */
+  @Post()
+  async fileDispute(@Body() dto: FileDisputeDto, @Request() req: any) {
+    return this.adminService.fileDispute(req.user.sub, dto);
   }
 }

@@ -81,6 +81,82 @@ export class AdminService {
   }
 
   /**
+   * File a dispute against a donation.
+   * Each donation may only have one open dispute at a time.
+   */
+  async fileDispute(
+    filerId: string,
+    dto: { donationId: string; reason: string; description: string },
+  ) {
+    const donation = await this.prisma.donation.findUnique({
+      where: { id: dto.donationId },
+      select: { id: true, campaignId: true, donorId: true },
+    });
+    if (!donation) {
+      throw new NotFoundException('Donation not found');
+    }
+
+    const existing = await this.prisma.dispute.findUnique({
+      where: { donationId: dto.donationId },
+    });
+    if (existing) {
+      throw new BadRequestException('A dispute already exists for this donation');
+    }
+
+    return this.prisma.dispute.create({
+      data: {
+        donationId: dto.donationId,
+        filerId,
+        campaignId: donation.campaignId,
+        reason: dto.reason,
+        description: dto.description,
+        status: 'OPENED',
+      },
+    });
+  }
+
+  /**
+   * Resolve an open dispute (admin only).
+   * Transitions status to RESOLVED and stamps resolvedAt.
+   */
+  async resolveDispute(
+    disputeId: string,
+    adminId: string,
+    resolution: string,
+  ) {
+    const dispute = await this.prisma.dispute.findUnique({
+      where: { id: disputeId },
+    });
+    if (!dispute) {
+      throw new NotFoundException('Dispute not found');
+    }
+    if (dispute.status === 'RESOLVED' || dispute.status === 'REJECTED') {
+      throw new BadRequestException(`Dispute is already ${dispute.status}`);
+    }
+
+    const updated = await this.prisma.dispute.update({
+      where: { id: disputeId },
+      data: {
+        status: 'RESOLVED',
+        resolution,
+        resolvedAt: new Date(),
+      },
+    });
+
+    await this.prisma.auditLog.create({
+      data: {
+        userId: adminId,
+        action: 'ADMIN_ACTION',
+        resourceType: 'Dispute',
+        resourceId: disputeId,
+        details: JSON.stringify({ action: 'DISPUTE_RESOLVED', resolution }),
+      },
+    });
+
+    return updated;
+  }
+
+  /**
    * Refund a confirmed donation and atomically recalculate the campaign's
    * raisedAmount within a single Prisma transaction.
    */
