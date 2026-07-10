@@ -131,6 +131,7 @@ model User {
   auditLogs              AuditLog[]
   apiKeys                ApiKey[]
   fundReleases           FundRelease[]
+  searchHistory          SearchHistory[]
 
   @@index([email])
   @@index([role])
@@ -461,4 +462,19 @@ model DeadLetter {
   @@index([queueName])
   @@index([failedAt])
   @@map("dead_letters")
+}
+
+/// SearchHistory model stores per-user campaign search queries for UX personalisation.
+model SearchHistory {
+  id         String   @id @default(uuid())
+  userId     String
+  query      String
+  searchedAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([searchedAt])
+  @@map("search_history")
 }
