@@ -76,8 +76,14 @@ describe('CampaignsService – browseCampaigns', () => {
 
     await service.browseCampaigns({ page: 1, limit: 10, sortBy: 'mostFunded' });
 
-    const [[, findManyCall]] = mockPrisma.$transaction.mock.calls;
-    expect(findManyCall).toBeDefined();
+    // Verify the sort order was actually applied to the findMany call
+    // (the previous version of this test only checked that $transaction
+    // received two args, which did not actually assert the sort behavior).
+    expect(mockPrisma.campaign.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        orderBy: { raisedAmount: 'desc' },
+      }),
+    );
   });
 
   it('returns empty data when no campaigns match', async () => {

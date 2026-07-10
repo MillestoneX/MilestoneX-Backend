@@ -28,7 +28,16 @@ describe('MilestonesService', () => {
   const MILESTONE_ID = 'milestone-1';
   const RELEASE_ID = 'release-1';
 
-  const campaign = { id: CAMPAIGN_ID, creatorId: CREATOR_ID };
+  // The service reads `campaign.raisedAmount.toString()` to compute
+  // available funds during fund-release validation. Most negative-path
+  // tests throw earlier (campaign missing / wrong creator / status),
+  // so a single non-zero mock value covers the happy-path tests
+  // without affecting any of the early-throw negatives.
+  const campaign = {
+    id: CAMPAIGN_ID,
+    creatorId: CREATOR_ID,
+    raisedAmount: '1000',
+  };
   const milestone = {
     id: MILESTONE_ID,
     campaignId: CAMPAIGN_ID,
