@@ -8,7 +8,7 @@
  * consumers (tax tools, accounting software, partner integrations) could
  * silently trust an incorrect value.
  *
- * See: https://github.com/OrbitChainLabs/OrbitChain-API/issues/15
+ * See: https://github.com/MilestoneXLabs/MilestoneX-API/issues/15
  */
 
 export interface DonationCsvRow {

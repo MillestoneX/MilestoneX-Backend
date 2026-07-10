@@ -6,8 +6,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const config = new DocumentBuilder()
-    .setTitle('OrbitChain API')
-    .setDescription('API for OrbitChain application')
+    .setTitle('MilestoneX API')
+    .setDescription('API for MilestoneX application')
     .setVersion('1.0')
     .addBearerAuth(
       {

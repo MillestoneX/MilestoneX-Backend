@@ -223,7 +223,7 @@ export class UsersService {
       user = await this.prisma.user.create({
         data: {
           walletAddress,
-          email: email || `${walletAddress}@orbitchain.local`,
+          email: email || `${walletAddress}@milestonex.local`,
           role: 'DONOR',
         },
       });

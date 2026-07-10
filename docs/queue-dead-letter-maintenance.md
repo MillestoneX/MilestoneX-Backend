@@ -49,7 +49,7 @@ npm start:dev
 Notes & follow-ups
 - I did not add an HTTP metrics endpoint — if you want `/metrics` exported for Prometheus scraping I can add a small controller that exposes `prom-client` metrics.
 - The branch with these changes is: `feat/queue-dead-letter-maintenance`.
-- Open PR URL: https://github.com/coderolisa/OrbitChain-API/pull/new/feat/queue-dead-letter-maintenance
+- Open PR URL: https://github.com/MilestoneXLabs/MilestoneX-API/pull/new/feat/queue-dead-letter-maintenance
 
 If you'd like, I can also:
 - Add an HTTP `/metrics` endpoint.

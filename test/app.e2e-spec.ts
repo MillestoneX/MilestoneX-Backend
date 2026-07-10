@@ -20,6 +20,6 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer())
       .get('/')
       .expect(200)
-      .expect('OrbitChain API is running!');
+      .expect('MilestoneX API is running!');
   });
 });

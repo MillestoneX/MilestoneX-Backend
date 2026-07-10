@@ -1,5 +1,5 @@
 /**
- * Email template helpers for OrbitChain notifications.
+ * Email template helpers for MilestoneX notifications.
  * Each function returns an object with `subject` and `html` builder.
  */
 
@@ -142,7 +142,7 @@ export const campaignSuspensionTemplate = {
     </a>
   </div>
   <p style="font-size:12px;color:#888;line-height:1.5;margin-top:32px;border-top:1px solid #e2e8f0;padding-top:16px">
-    This is an automated notification from OrbitChain. Please do not reply to this email.
+    This is an automated notification from MilestoneX. Please do not reply to this email.
   </p>
 </body>
 </html>`,

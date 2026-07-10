@@ -94,7 +94,7 @@ jobs:
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: orbitchain
+          POSTGRES_DB: milestonex
         ports:
           - 5432:5432
         options: >-
@@ -132,20 +132,20 @@ jobs:
       - name: Push database schema
         run: npx prisma db push
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/orbitchain?schema=public
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/milestonex?schema=public
 
       - name: Jest e2e
         # E2e tests need environment variables for Prisma and other services
         # Using placeholder values for CI - tests should mock external dependencies
         env:
-          DATABASE_URL: postgresql://test:test@localhost:5432/orbitchain_test
+          DATABASE_URL: postgresql://test:test@localhost:5432/milestonex_test
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret-for-ci
           NODE_ENV: test
           PORT: 3001
         run: npm run test:e2e
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/orbitchain?schema=public
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/milestonex?schema=public
           REDIS_URL: redis://localhost:6379
           JWT_SECRET: test-secret
           NODE_ENV: test

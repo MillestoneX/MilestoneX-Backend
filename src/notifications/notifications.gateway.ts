@@ -67,7 +67,7 @@ export class NotificationsGateway
 
       const secret = this.configService.get<string>(
         'JWT_SECRET',
-        'orbitchain-default-secret',
+        'milestonex-default-secret',
       );
 
       const payload = this.jwtService.verify(token, { secret });

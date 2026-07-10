@@ -1,4 +1,4 @@
-# OrbitChain API
+# MilestoneX API
 
 <p align="center">
   <strong>Decentralized Fundraising & Campaign Management API</strong><br/>
@@ -15,7 +15,7 @@
 
 ## Overview
 
-**OrbitChain** is a decentralized fundraising platform API that enables transparent, blockchain-verified campaign creation, donation processing, and milestone-based fund releases on the Stellar network. Designed for NGOs, community organizers, and individual fundraisers who demand trustless accountability.
+**MilestoneX** is a decentralized fundraising platform API that enables transparent, blockchain-verified campaign creation, donation processing, and milestone-based fund releases on the Stellar network. Designed for NGOs, community organizers, and individual fundraisers who demand trustless accountability.
 
 ### Key Capabilities
 
@@ -60,7 +60,7 @@
 ```bash
 # Clone the repository
 git clone <repository-url>
-cd orbitchain-api
+cd milestonex-api
 
 # Install dependencies
 npm install
@@ -76,7 +76,7 @@ Update the `.env` file with your credentials:
 
 ```env
 # Database
-DATABASE_URL="postgresql://user:password@localhost:5432/orbitchain?schema=public"
+DATABASE_URL="postgresql://user:password@localhost:5432/milestonex?schema=public"
 
 # Redis
 REDIS_URL="redis://localhost:6379"
@@ -89,7 +89,7 @@ SMTP_HOST=smtp.example.com
 SMTP_PORT=587
 SMTP_USER=your-user
 SMTP_PASS=your-password
-EMAIL_FROM=noreply@orbitchain.io
+EMAIL_FROM=noreply@milestonex.io
 ```
 
 ### Database Migrations
@@ -201,7 +201,7 @@ All donation CSV exports (`GET /users/me/donations/export` and the async queue v
 
 > **USD Equivalent column is intentionally absent.**
 > A hardcoded `0.00` placeholder was previously exported under this heading — a medium-severity finding
-> ([#15](https://github.com/OrbitChainLabs/OrbitChain-API/issues/15)) because downstream consumers
+> ([#15](https://github.com/MilestoneXLabs/MilestoneX-API/issues/15)) because downstream consumers
 > (tax tools, accounting software, partner integrations) could silently trust an incorrect value.
 > The column will be reinstated once a verified price-oracle integration
 > (Stellar Horizon order-book snapshots, CoinGecko, or a self-hosted oracle) is in place.
@@ -221,7 +221,7 @@ npm run build
 node dist/main
 
 # Or use a process manager
-pm2 start dist/main.js --name orbitchain-api
+pm2 start dist/main.js --name milestonex-api
 ```
 
 ---

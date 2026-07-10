@@ -539,7 +539,7 @@ export class DonationsService {
     return this.prisma.user.create({
       data: {
         walletAddress,
-        email: `${walletAddress}@orbitchain.local`,
+        email: `${walletAddress}@milestonex.local`,
         role: 'DONOR',
       },
     });

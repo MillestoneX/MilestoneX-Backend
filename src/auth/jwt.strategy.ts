@@ -4,7 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 
 /**
- * Passport JWT strategy for OrbitChain.
+ * Passport JWT strategy for MilestoneX.
  * Validates tokens and extracts user info from the JWT payload.
  */
 @Injectable()

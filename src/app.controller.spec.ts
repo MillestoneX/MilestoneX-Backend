@@ -15,8 +15,8 @@ describe('AppController', () => {
   });
 
   describe('root', () => {
-    it('should return "OrbitChain API is running!"', () => {
-      expect(appController.getHello()).toBe('OrbitChain API is running!');
+    it('should return "MilestoneX API is running!"', () => {
+      expect(appController.getHello()).toBe('MilestoneX API is running!');
     });
   });
 });

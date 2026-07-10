@@ -1,8 +1,8 @@
 {
-  "name": "orbitchain-api",
+  "name": "milestonex-api",
   "version": "0.0.1",
   "description": "A decentralized fundraising and campaign management platform API built on NestJS with blockchain-verified transactions on the Stellar network, featuring milestone-based fund releases, Soroban smart contracts, and real-time event notifications",
-  "author": "OrbitChain Team",
+  "author": "MilestoneX Team",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
