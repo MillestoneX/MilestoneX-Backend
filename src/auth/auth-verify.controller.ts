@@ -43,6 +43,8 @@ export class AuthVerifyController {
   async verify(@Body() dto: VerifyDto): Promise<AuthResponse> {
     const { walletAddress, signedChallenge, challenge } = dto;
 
+    // ── Step 1: Validate the wallet address format ───────────────────────────
+    // Must be a valid 56-character Stellar Ed25519 public key (G-address).
     if (!walletAddress || !StrKey.isValidEd25519PublicKey(walletAddress)) {
       throw new BadRequestException('Invalid wallet address');
     }
@@ -50,6 +52,9 @@ export class AuthVerifyController {
       throw new BadRequestException('Missing signedChallenge or challenge');
     }
 
+    // ── Step 2: Verify the Ed25519 signature ─────────────────────────────────
+    // The client must sign the raw UTF-8 bytes of `challenge` with their private
+    // key and encode the result as base64.  We decode and verify here.
     const keypair = Keypair.fromPublicKey(walletAddress);
     const messageBytes = Buffer.from(challenge, 'utf8');
     const signatureBytes = Buffer.from(signedChallenge, 'base64');
@@ -59,7 +64,9 @@ export class AuthVerifyController {
       throw new UnauthorizedException('Signature verification failed');
     }
 
-    // Issue #222: resolve role from admin allowlist
+    // ── Step 3: Resolve role from the admin allowlist ─────────────────────────
+    // ADMIN_WALLETS is a comma-separated list of wallet addresses that should
+    // automatically receive the ADMIN role on login.  All others default to USER.
     const adminWallets = this.config
       .get<string>('ADMIN_WALLETS', '')
       .split(',')
@@ -71,7 +78,9 @@ export class AuthVerifyController {
       ? UserRole.ADMIN
       : undefined;
 
-    // Issue #225: upsert user — create with defaults on first login
+    // ── Step 4: Upsert user (create on first login) ───────────────────────────
+    // Derives a short display name from the wallet address (e.g. "GABCD...XY12").
+    // On subsequent logins, only the role is updated (if the allowlist changed).
     const displayName = `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}`;
 
     const user = await this.prisma.user.upsert({
@@ -86,6 +95,10 @@ export class AuthVerifyController {
 
     const role = roleFromAllowlist ?? user.role;
 
+    // ── Step 5: Issue a signed JWT ────────────────────────────────────────────
+    // Payload: { sub: userId, walletAddress, role }
+    // The `sub` claim is the database UUID — used as the canonical user identifier
+    // in all downstream guards and services.
     const accessToken = this.jwt.sign({
       sub: user.id,
       walletAddress,
