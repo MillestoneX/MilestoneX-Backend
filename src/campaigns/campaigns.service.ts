@@ -393,7 +393,7 @@ export class CampaignsService {
     });
   }
 
-  /** Compute aggregate stats for a campaign: total raised, donor count, etc. */
+  /** Compute aggregate stats for a campaign: total raised, donor count, progress %, etc. */
   async getCampaignStats(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -407,14 +407,24 @@ export class CampaignsService {
       select: { amount: true, donorId: true, assetCode: true, createdAt: true },
     });
 
+    // Safely handle edge case of zero donations
     const totalRaised = donations.reduce((sum, d) => sum + Number(d.amount), 0);
     const donorCount = new Set(donations.map((d) => d.donorId)).size;
     const uniqueAssets = [...new Set(donations.map((d) => d.assetCode))];
-    const avgDonation = donations.length ? totalRaised / donations.length : 0;
+    const avgDonation =
+      donations.length > 0 ? totalRaised / donations.length : 0;
+
+    const goalAmount = Number(campaign.goalAmount);
+    const progressPercentage =
+      goalAmount > 0
+        ? Math.min(100, parseFloat(((totalRaised / goalAmount) * 100).toFixed(2)))
+        : 0;
 
     return {
       campaignId,
       totalRaised,
+      goalAmount,
+      progressPercentage,
       donorCount,
       uniqueAssets,
       avgDonation,
