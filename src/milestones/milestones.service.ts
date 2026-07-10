@@ -243,6 +243,18 @@ export class MilestonesService {
     return result;
   }
 
+  /** Validate dueDate is a valid future ISO date when provided */
+  async validateMilestoneDueDate(dueDate?: string): Promise<void> {
+    if (!dueDate) return;
+    const date = new Date(dueDate);
+    if (isNaN(date.getTime())) {
+      throw new BadRequestException('Milestone dueDate must be a valid ISO date string');
+    }
+    if (date <= new Date()) {
+      throw new BadRequestException('Milestone due date must be in the future');
+    }
+  }
+
   /**
    * Mark a milestone as COMPLETED.
    * Only the campaign creator may complete a milestone.

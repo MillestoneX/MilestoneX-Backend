@@ -226,6 +226,7 @@ model Donation {
   @@index([campaignId])
   @@index([status])
   @@index([createdAt])
+  @@index([donatedAt])
   @@map("donations")
 }
 
