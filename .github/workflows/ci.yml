@@ -23,7 +23,7 @@ jobs:
       - name: Install
         run: npm ci
 
-      - name: ESLint
+      - name: ESLint (no auto-fix)
         run: npm run lint
 
   format:
@@ -43,7 +43,7 @@ jobs:
         run: npm ci
 
       - name: Prettier check
-        run: npx prettier --check "src/**/*.ts" "test/**/*.ts"
+        run: npm run format:check
 
   build:
     name: Build
