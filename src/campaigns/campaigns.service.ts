@@ -79,6 +79,18 @@ export class CampaignsService {
       throw new NotFoundException('Campaign not found');
     }
 
+    if (campaign.creatorId !== userId) {
+      throw new ForbiddenException('Only the campaign creator can update this campaign');
+    }
+
+    // Validate new endDate if provided
+    if (dto.endDate) {
+      const endDate = new Date(dto.endDate);
+      if (isNaN(endDate.getTime()) || endDate <= new Date()) {
+        throw new BadRequestException('Campaign end date must be in the future');
+      }
+    }
+
     return this.prisma.campaign.update({
       where: { id: campaignId },
       data: {
@@ -86,6 +98,8 @@ export class CampaignsService {
         description: dto.description ?? dto.story ?? campaign.description,
         story: dto.story ?? campaign.story,
         imageUrl: dto.coverImageUrl ?? campaign.imageUrl,
+        category: dto.category ?? campaign.category,
+        endDate: dto.endDate ? new Date(dto.endDate) : campaign.endDate,
       },
     });
   }
