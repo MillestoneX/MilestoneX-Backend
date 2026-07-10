@@ -31,7 +31,15 @@ export class ExportProcessor {
   ): Promise<ExportDonationJobResult> {
     const { userId, campaignId, startDate, endDate } = job.data;
 
-    this.logger.log(`Processing donation export for user ${userId}`);
+    this.logger.log(
+      `Processing donation export job=${job.id} for user=${userId}`,
+    );
+
+    if (!userId) {
+      const msg = `Export job ${job.id} is missing userId`;
+      this.logger.error(msg);
+      throw new Error(msg);
+    }
 
     // Build where clause
     const where: Prisma.DonationWhereInput = {
@@ -46,36 +54,61 @@ export class ExportProcessor {
     if (startDate || endDate) {
       where.donatedAt = {};
       if (startDate) {
-        where.donatedAt.gte = new Date(startDate);
+        const parsed = new Date(startDate);
+        if (isNaN(parsed.getTime())) {
+          throw new Error(`Invalid startDate: ${startDate}`);
+        }
+        where.donatedAt.gte = parsed;
       }
       if (endDate) {
-        where.donatedAt.lte = new Date(endDate);
+        const parsed = new Date(endDate);
+        if (isNaN(parsed.getTime())) {
+          throw new Error(`Invalid endDate: ${endDate}`);
+        }
+        where.donatedAt.lte = parsed;
       }
     }
 
-    // Fetch all donations for this user
-    const donations = await this.prisma.donation.findMany({
-      where,
-      include: {
-        campaign: {
-          select: { title: true },
+    let donations: Awaited<ReturnType<typeof this.prisma.donation.findMany>>;
+    try {
+      donations = await this.prisma.donation.findMany({
+        where,
+        include: {
+          campaign: {
+            select: { title: true },
+          },
         },
-      },
-      orderBy: { donatedAt: 'desc' },
-    });
+        orderBy: { donatedAt: 'desc' },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Failed to fetch donations for export job=${job.id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
 
-    const csv = buildDonationCsv(
-      donations.map((d) => ({
-        campaignTitle: d.campaignId || 'Unknown',
-        amount: d.amount.toString(),
-        assetCode: d.assetCode,
-        donatedAt: d.donatedAt,
-        txHash: d.txHash,
-      })),
-    );
+    let csv: string;
+    try {
+      csv = buildDonationCsv(
+        donations.map((d) => ({
+          campaignTitle: (d as any).campaign?.title || 'Unknown',
+          amount: d.amount.toString(),
+          assetCode: d.assetCode,
+          donatedAt: d.donatedAt,
+          txHash: d.txHash,
+        })),
+      );
+    } catch (err) {
+      this.logger.error(
+        `Failed to build CSV for export job=${job.id}: ${(err as Error).message}`,
+        (err as Error).stack,
+      );
+      throw err;
+    }
 
     this.logger.log(
-      `Donation export complete for user ${userId}: ${donations.length} rows`,
+      `Export job=${job.id} completed: user=${userId} rows=${donations.length}`,
     );
 
     return { csv, rowCount: donations.length };
