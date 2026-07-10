@@ -209,6 +209,31 @@ All donation CSV exports (`GET /users/me/donations/export` and the async queue v
 
 ---
 
+## Environment Variables Reference
+
+All configuration is provided via environment variables. Copy `.env.example` to `.env` and fill in the values.
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `DATABASE_URL` | ✅ | — | PostgreSQL connection string |
+| `REDIS_URL` | ✅ | — | Redis connection URL |
+| `JWT_SECRET` | ✅ | — | Secret key for signing JWT access tokens |
+| `JWT_EXPIRY` | ❌ | `15m` | JWT token expiry duration |
+| `PORT` | ❌ | `3000` | HTTP port the server listens on |
+| `NODE_ENV` | ❌ | `development` | Runtime environment (`development`, `production`, `test`) |
+| `ADMIN_WALLETS` | ❌ | — | Comma-separated list of Stellar wallet addresses granted the ADMIN role on login |
+| `STELLAR_HORIZON_URL` | ❌ | `https://horizon-testnet.stellar.org` | Stellar Horizon API endpoint |
+| `SMTP_HOST` | ❌ | — | SMTP server hostname for email delivery |
+| `SMTP_PORT` | ❌ | `587` | SMTP port |
+| `SMTP_USER` | ❌ | — | SMTP authentication username |
+| `SMTP_PASS` | ❌ | — | SMTP authentication password |
+| `EMAIL_FROM` | ❌ | `noreply@milestonex.io` | Sender address used in outgoing emails |
+| `SENTRY_DSN` | ❌ | — | Sentry DSN for error tracking (disabled if unset) |
+
+> **Security note:** Never commit real secrets to source control. Use a secrets manager or CI environment variable injection for production deployments.
+
+---
+
 ## Deployment
 
 For production deployment:
