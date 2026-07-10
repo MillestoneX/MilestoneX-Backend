@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -19,6 +20,8 @@ import { buildDonationCsv } from '../common/csv-export.helper';
 
 @Injectable()
 export class DonationsService {
+  private readonly logger = new Logger(DonationsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly campaigns: CampaignsService,
@@ -40,6 +43,10 @@ export class DonationsService {
     if (!dto.txHash) {
       throw new BadRequestException('txHash is required');
     }
+
+    this.logger.log(
+      `createDonation: wallet=${walletAddress} txHash=${dto.txHash} campaignId=${dto.campaignId}`,
+    );
 
     const existing = await this.prisma.donation.findUnique({
       where: { txHash: dto.txHash },
@@ -146,6 +153,10 @@ export class DonationsService {
     });
 
     await this.campaigns.recalculateCampaignStats(campaign.id);
+
+    this.logger.log(
+      `Donation confirmed: id=${created.id} amount=${created.amount} asset=${created.assetCode} campaign=${campaign.id}`,
+    );
 
     return {
       donation: {
