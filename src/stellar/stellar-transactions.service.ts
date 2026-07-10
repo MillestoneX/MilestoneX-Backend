@@ -28,6 +28,39 @@ export interface VerifiedDonationTx {
   ledger: number;
 }
 
+/**
+ * Minimal subsets of the Stellar Horizon REST responses used by this service.
+ * Field names match Horizon's snake_case JSON; only the fields we read are
+ * declared (Horizon returns many more, which TypeScript ignores via `unknown`
+ * narrowing at call sites).
+ */
+interface HorizonTransactionResponse {
+  successful: boolean;
+  ledger: number;
+  source_account?: string;
+}
+
+interface HorizonOperationResponse {
+  id: string;
+  type: string;
+  to?: string;
+  amount?: string;
+  asset_type?: string;
+  asset_code?: string;
+  asset_issuer?: string;
+}
+
+interface HorizonBalance {
+  asset_type?: string;
+  asset_code?: string;
+  asset_issuer?: string;
+  balance?: string;
+}
+
+interface HorizonAccountResponse {
+  balances?: HorizonBalance[];
+}
+
 @Injectable()
 export class StellarTransactionsService {
   private readonly horizonUrl: string;
@@ -115,7 +148,9 @@ export class StellarTransactionsService {
   }
 
   /** Fetch a transaction from Horizon with exponential backoff retry */
-  async fetchTransactionWithRetry(txHash: string) {
+  async fetchTransactionWithRetry(
+    txHash: string,
+  ): Promise<HorizonTransactionResponse> {
     return withRetries(
       3,
       async () => {
@@ -135,7 +170,7 @@ export class StellarTransactionsService {
             `Horizon error fetching transaction (${res.status})`,
           );
         }
-        return await res.json();
+        return (await res.json()) as HorizonTransactionResponse;
       },
       (err) =>
         err instanceof NotFoundException ||
@@ -144,7 +179,9 @@ export class StellarTransactionsService {
   }
 
   /** Fetch transaction operations from Horizon with exponential backoff retry */
-  async fetchTransactionOperationsWithRetry(txHash: string) {
+  async fetchTransactionOperationsWithRetry(
+    txHash: string,
+  ): Promise<HorizonOperationResponse[]> {
     return withRetries(
       3,
       async () => {
@@ -167,12 +204,14 @@ export class StellarTransactionsService {
           );
         }
 
-        const json = await res.json();
+        const json = (await res.json()) as {
+          _embedded?: { records?: unknown };
+        };
         const records = json?._embedded?.records;
         if (!Array.isArray(records)) {
           throw new BadRequestException('Invalid Horizon operations response');
         }
-        return records;
+        return records as HorizonOperationResponse[];
       },
       (err) =>
         err instanceof NotFoundException ||
@@ -187,7 +226,10 @@ export class StellarTransactionsService {
     return accepted.some((a) => assetsEqual(a, asset));
   }
 
-  private assetMatchesOperation(asset: StellarAcceptedAsset, op: any): boolean {
+  private assetMatchesOperation(
+    asset: StellarAcceptedAsset,
+    op: HorizonOperationResponse,
+  ): boolean {
     const opAsset = assetFromOperation(op);
     if (!opAsset) return false;
     return assetsEqual(asset, opAsset);
@@ -220,10 +262,10 @@ export class StellarTransactionsService {
       );
     }
 
-    const account = await res.json();
+    const account = (await res.json()) as HorizonAccountResponse;
     const balances = account?.balances ?? [];
 
-    return balances.map((b: any) => {
+    return balances.map((b: HorizonBalance) => {
       const assetType = String(b.asset_type ?? '');
       if (assetType === 'native') {
         return {
@@ -298,7 +340,9 @@ function assetsEqual(
   return false;
 }
 
-function assetFromOperation(op: any): StellarAcceptedAsset | null {
+function assetFromOperation(
+  op: HorizonOperationResponse,
+): StellarAcceptedAsset | null {
   const assetType = String(op.asset_type ?? '');
   if (assetType === 'native') {
     return { assetType: 'native' };
