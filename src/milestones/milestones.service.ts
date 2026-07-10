@@ -244,6 +244,57 @@ export class MilestonesService {
   }
 
   /**
+   * Mark a milestone as COMPLETED.
+   * Only the campaign creator may complete a milestone.
+   * Milestone must be in ACTIVE or UNLOCKED status.
+   *
+   * @param campaignId  The parent campaign UUID
+   * @param milestoneId The milestone UUID to complete
+   * @param creatorId   The requesting user UUID (must be campaign creator)
+   * @param txHash      Optional on-chain transaction hash for proof
+   */
+  async completeMilestone(
+    campaignId: string,
+    milestoneId: string,
+    creatorId: string,
+    txHash?: string,
+  ) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+    });
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+    if (campaign.creatorId !== creatorId) {
+      throw new ForbiddenException('Only the campaign creator can complete milestones');
+    }
+
+    const milestone = await this.prisma.milestone.findUnique({
+      where: { id: milestoneId },
+    });
+    if (!milestone) {
+      throw new NotFoundException('Milestone not found');
+    }
+    if (milestone.campaignId !== campaignId) {
+      throw new BadRequestException('Milestone does not belong to this campaign');
+    }
+    if (!['ACTIVE', 'UNLOCKED'].includes(milestone.status)) {
+      throw new BadRequestException(
+        `Milestone must be ACTIVE or UNLOCKED to complete. Current status: ${milestone.status}`,
+      );
+    }
+
+    return this.prisma.milestone.update({
+      where: { id: milestoneId },
+      data: {
+        status: 'COMPLETED',
+        completedAt: new Date(),
+        ...(txHash ? { txHash } : {}),
+      },
+    });
+  }
+
+  /**
    * Cancel a PENDING fund release. Only the original creator may cancel.
    */
   async cancelFundRelease(

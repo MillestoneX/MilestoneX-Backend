@@ -104,4 +104,25 @@ export class MilestonesController {
     const userId = req.user?.sub as string;
     return this.milestonesService.cancelFundRelease(releaseId, userId);
   }
+
+  /**
+   * POST /campaigns/:campaignId/milestones/:milestoneId/complete
+   * Mark a milestone as COMPLETED (creator only).
+   */
+  @UseGuards(JwtAuthGuard)
+  @Post(':milestoneId/complete')
+  async completeMilestone(
+    @Param('campaignId') campaignId: string,
+    @Param('milestoneId') milestoneId: string,
+    @Body('txHash') txHash: string | undefined,
+    @Request() req: any,
+  ) {
+    const creatorId = req.user?.sub as string;
+    return this.milestonesService.completeMilestone(
+      campaignId,
+      milestoneId,
+      creatorId,
+      txHash,
+    );
+  }
 }
