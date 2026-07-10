@@ -1,21 +1,26 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsString, IsNotEmpty, MaxLength, IsUUID } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-/** DTO for requesting a fund release against an unlocked milestone */
+/** DTO for submitting a campaign fund release request */
 export class RequestFundReleaseDto {
-  @IsNotEmpty()
+  @ApiProperty({ description: 'Amount to release as numeric string', example: '500' })
   @IsString()
+  @IsNotEmpty()
   amount: string;
 
+  @ApiProperty({ description: 'Human-readable reason for releasing funds', maxLength: 1000 })
   @IsOptional()
-  @IsString()
+  @MaxLength(1000)
   releaseReason?: string;
 
+  @ApiProperty({ description: 'JSON signature payload for on-chain verification' })
   @IsOptional()
-  @IsString()
   signaturePayload?: string;
 }
 
-export class FundReleaseResponseDto {
+import { IsOptional } from 'class-validator';
+
+export interface FundReleaseResponseDto {
   id: string;
   milestoneId: string;
   campaignId: string;
@@ -28,7 +33,7 @@ export class FundReleaseResponseDto {
   updatedAt: Date;
 }
 
-export class FundReleaseDetailDto {
+export interface FundReleaseDetailDto {
   id: string;
   milestoneId: string;
   campaignId: string;
