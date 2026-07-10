@@ -183,6 +183,26 @@ export class CampaignsService {
     return { data: campaigns, total, page, limit };
   }
 
+  /**
+   * Returns all distinct campaign categories with their campaign counts.
+   * Only includes non-DRAFT campaigns.
+   */
+  async getCategories(): Promise<{ category: string; count: number }[]> {
+    const rows = await this.prisma.campaign.groupBy({
+      by: ['category'],
+      where: {
+        category: { not: null },
+        status: { not: 'DRAFT' },
+      },
+      _count: { category: true },
+      orderBy: { _count: { category: 'desc' } },
+    });
+
+    return rows
+      .filter((r) => r.category)
+      .map((r) => ({ category: r.category as string, count: r._count.category }));
+  }
+
   /** Returns up to 6 featured, non-DRAFT campaigns sorted by recent activity */
   async getFeaturedCampaigns() {
     return this.prisma.campaign.findMany({

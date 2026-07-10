@@ -94,6 +94,15 @@ export class CampaignsController {
     return this.campaignsService.updateCampaign(userId, id, body);
   }
 
+  /**
+   * GET /campaigns/categories
+   * Returns all distinct campaign categories with their campaign counts.
+   */
+  @Get('categories')
+  async getCategories(): Promise<{ category: string; count: number }[]> {
+    return this.campaignsService.getCategories();
+  }
+
   @Get()
   async browseCampaigns(
     @Query() query: BrowseCampaignsQueryDto,
