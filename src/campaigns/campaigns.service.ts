@@ -510,6 +510,14 @@ export class CampaignsService {
   }
 }
 
+/**
+ * Validate and parse a milestone targetAmount string.
+ * Throws `BadRequestException` when the value is missing, non-numeric, or below
+ * the minimum threshold defined by `MIN_MILESTONE_TARGET_AMOUNT`.
+ *
+ * @param targetAmount Raw string from the request DTO
+ * @returns The original trimmed string (preserves decimal precision for Prisma Decimal columns)
+ */
 function parseMilestoneTargetAmount(targetAmount?: string) {
   const raw = targetAmount?.trim();
   const amount = raw ? Number(raw) : Number.NaN;
@@ -527,6 +535,11 @@ function parseMilestoneTargetAmount(targetAmount?: string) {
   return raw;
 }
 
+/**
+ * Returns a Prisma select object for campaign browse/list responses.
+ * Includes creator summary and aggregate counts but excludes heavy relations
+ * (donations array, milestones array) to keep list payloads lean.
+ */
 function campaignBrowseSelect() {
   return {
     id: true,
@@ -561,6 +574,18 @@ function campaignBrowseSelect() {
   } satisfies Prisma.CampaignSelect;
 }
 
+/**
+ * Parse the `acceptedAssets` array from the CreateCampaignDto into the typed
+ * structure stored in the database as JSONB.
+ *
+ * Accepted formats:
+ * - `"XLM"` → `{ assetType: 'native' }`
+ * - `"USDC:GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"` → `{ assetType: 'credit', code, issuer }`
+ *
+ * Invalid entries (missing issuer, bad format) are silently dropped.
+ *
+ * @param values Raw array of asset strings from the DTO
+ */
 function parseAcceptedAssets(values?: string[]) {
   if (!values || values.length === 0) return [];
 
@@ -581,6 +606,13 @@ function parseAcceptedAssets(values?: string[]) {
   >;
 }
 
+/**
+ * Build Prisma raw SQL WHERE fragment for campaign full-text search queries.
+ * Always excludes DRAFT campaigns and optionally filters by status/category.
+ *
+ * @param input  Optional `category` and `status` filter strings
+ * @returns Object with `whereSql` — a `Prisma.Sql` fragment for use in `$queryRaw`
+ */
 function sqlCampaignFilters(input: { category?: string; status?: string }) {
   const whereParts: Prisma.Sql[] = [Prisma.sql`c.status <> 'DRAFT'`];
 
