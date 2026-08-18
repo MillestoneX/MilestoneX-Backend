@@ -177,28 +177,76 @@ describe('MilestonesService', () => {
   });
 
   describe('getFundReleaseById', () => {
-    it('returns the release with campaign title', async () => {
+    const creatorRequester = { userId: CREATOR_ID, role: 'USER' };
+    const otherRequester = { userId: OTHER_ID, role: 'USER' };
+    const adminRequester = { userId: 'admin-1', role: 'ADMIN' };
+
+    it('returns the release with campaign title for the creator', async () => {
       prisma.fundRelease.findUnique.mockResolvedValueOnce({
         ...baseRelease,
-        campaign: { id: CAMPAIGN_ID, title: 'My Campaign' },
+        campaign: {
+          id: CAMPAIGN_ID,
+          title: 'My Campaign',
+          creatorId: CREATOR_ID,
+        },
       });
-      const result = await service.getFundReleaseById(RELEASE_ID, CREATOR_ID);
+      const result = await service.getFundReleaseById(
+        RELEASE_ID,
+        creatorRequester,
+      );
       expect(result.campaignTitle).toBe('My Campaign');
     });
 
-    it('throws ForbiddenException when a different user requests it', async () => {
+    it('throws ForbiddenException for a non-owner non-admin', async () => {
       prisma.fundRelease.findUnique.mockResolvedValueOnce({
         ...baseRelease,
-        campaign: { id: CAMPAIGN_ID, title: 'My Campaign' },
+        campaign: {
+          id: CAMPAIGN_ID,
+          title: 'My Campaign',
+          creatorId: CREATOR_ID,
+        },
       });
       await expect(
-        service.getFundReleaseById(RELEASE_ID, OTHER_ID),
+        service.getFundReleaseById(RELEASE_ID, otherRequester),
       ).rejects.toBeInstanceOf(ForbiddenException);
+    });
+
+    it('allows an admin to view any release', async () => {
+      prisma.fundRelease.findUnique.mockResolvedValueOnce({
+        ...baseRelease,
+        campaign: {
+          id: CAMPAIGN_ID,
+          title: 'My Campaign',
+          creatorId: CREATOR_ID,
+        },
+      });
+      const result = await service.getFundReleaseById(
+        RELEASE_ID,
+        adminRequester,
+      );
+      expect(result.campaignTitle).toBe('My Campaign');
+    });
+
+    it('does not include signaturePayload in the response', async () => {
+      prisma.fundRelease.findUnique.mockResolvedValueOnce({
+        ...baseRelease,
+        signaturePayload: '{"secret":"sensitive"}',
+        campaign: {
+          id: CAMPAIGN_ID,
+          title: 'My Campaign',
+          creatorId: CREATOR_ID,
+        },
+      });
+      const result = await service.getFundReleaseById(
+        RELEASE_ID,
+        creatorRequester,
+      );
+      expect(result).not.toHaveProperty('signaturePayload');
     });
   });
 
   describe('getCampaignFundReleaseStats', () => {
-    it('aggregates counts and sums grouped by status', async () => {
+    it('aggregates counts and sums grouped by status for campaign creator', async () => {
       prisma.fundRelease.groupBy.mockResolvedValueOnce([
         {
           status: 'PENDING',
@@ -212,11 +260,40 @@ describe('MilestonesService', () => {
         },
       ]);
 
-      const result = await service.getCampaignFundReleaseStats(CAMPAIGN_ID);
+      const result = await service.getCampaignFundReleaseStats(CAMPAIGN_ID, {
+        userId: CREATOR_ID,
+        role: 'USER',
+      });
 
       expect(result.total).toBe(3);
       expect(result.pending).toEqual({ count: 2, amount: '300' });
       expect(result.released).toEqual({ count: 1, amount: '700' });
+    });
+
+    it('allows an admin to view stats for any campaign', async () => {
+      prisma.fundRelease.groupBy.mockResolvedValueOnce([
+        {
+          status: 'PENDING',
+          _count: 1,
+          _sum: { amount: { toString: () => '100' } },
+        },
+      ]);
+
+      const result = await service.getCampaignFundReleaseStats(CAMPAIGN_ID, {
+        userId: 'admin-1',
+        role: 'ADMIN',
+      });
+
+      expect(result.total).toBe(1);
+    });
+
+    it('throws ForbiddenException for non-owner non-admin', async () => {
+      await expect(
+        service.getCampaignFundReleaseStats(CAMPAIGN_ID, {
+          userId: OTHER_ID,
+          role: 'USER',
+        }),
+      ).rejects.toBeInstanceOf(ForbiddenException);
     });
   });
 });
