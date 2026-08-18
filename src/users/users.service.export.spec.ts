@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bull';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
@@ -170,5 +170,80 @@ describe('UsersService – getMyProfile', () => {
     expect(result.totalRaised).toBe(500);
     expect(result.totalDonated).toBe(100);
     expect(result.campaignCount).toBe(1);
+  });
+});
+
+describe('UsersService – getExportJobStatus (ownership enforcement)', () => {
+  let service: UsersService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: getQueueToken(QUEUE_EXPORT), useValue: mockExportQueue },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+    jest.clearAllMocks();
+  });
+
+  it('throws ForbiddenException when userId does not match the job owner', async () => {
+    mockExportQueue.getJob.mockResolvedValue({
+      data: { userId: 'user-A' },
+      getState: jest.fn().mockResolvedValue('completed'),
+      returnvalue: { csv: 'csv-data', rowCount: 1 },
+    });
+
+    await expect(
+      service.getExportJobStatus('job-1', 'user-B'),
+    ).rejects.toThrow(ForbiddenException);
+  });
+
+  it('returns CSV when the requesting user owns the job', async () => {
+    mockExportQueue.getJob.mockResolvedValue({
+      data: { userId: 'user-A' },
+      getState: jest.fn().mockResolvedValue('completed'),
+      returnvalue: { csv: 'campaign,amount\nTest,10', rowCount: 1 },
+    });
+
+    const result = await service.getExportJobStatus('job-1', 'user-A');
+
+    expect(result.status).toBe('completed');
+    expect(result.csv).toBe('campaign,amount\nTest,10');
+    expect(result.rowCount).toBe(1);
+  });
+
+  it('returns non-completed status for in-progress jobs owned by the requester', async () => {
+    mockExportQueue.getJob.mockResolvedValue({
+      data: { userId: 'user-A' },
+      getState: jest.fn().mockResolvedValue('active'),
+    });
+
+    const result = await service.getExportJobStatus('job-1', 'user-A');
+
+    expect(result.status).toBe('active');
+    expect(result.csv).toBeUndefined();
+  });
+
+  it('throws NotFoundException when job does not exist', async () => {
+    mockExportQueue.getJob.mockResolvedValue(null);
+
+    await expect(
+      service.getExportJobStatus('999', 'user-A'),
+    ).rejects.toThrow(NotFoundException);
+  });
+
+  it('exportUserDonationsAsCSV records the authenticated userId in the job payload', async () => {
+    mockPrisma.donation.count.mockResolvedValue(501);
+    mockExportQueue.add.mockResolvedValue({ id: 'job-10' });
+
+    await service.exportUserDonationsAsCSV('authenticated-user-id');
+
+    expect(mockExportQueue.add).toHaveBeenCalledWith(
+      'donation-export',
+      expect.objectContaining({ userId: 'authenticated-user-id' }),
+    );
   });
 });

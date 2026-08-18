@@ -140,9 +140,11 @@ export class UsersController {
   @Get('me/donations/export/:jobId/status')
   async getExportJobStatus(
     @Param('jobId') jobId: string,
+    @Request() req: any,
     @Res() res: Response,
   ): Promise<void> {
-    const result = await this.usersService.getExportJobStatus(jobId);
+    const userId = req.user?.sub as string;
+    const result = await this.usersService.getExportJobStatus(jobId, userId);
 
     if (result.status === 'completed' && result.csv) {
       res.setHeader('Content-Type', 'text/csv');
