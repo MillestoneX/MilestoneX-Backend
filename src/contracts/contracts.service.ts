@@ -1,6 +1,7 @@
 import {
   Injectable,
   NotFoundException,
+  ForbiddenException,
   BadRequestException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -10,8 +11,11 @@ import { CreateContractDto } from './dto/create-contract.dto';
 export class ContractsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Deploy a new smart contract record linked to a campaign */
-  async createContract(dto: CreateContractDto) {
+  /**
+   * Deploy a new smart contract record linked to a campaign.
+   * Only the campaign creator may register a contract for their campaign.
+   */
+  async createContract(dto: CreateContractDto, requesterUserId: string) {
     // Verify campaign exists
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: dto.campaignId },
@@ -19,6 +23,14 @@ export class ContractsService {
     if (!campaign) {
       throw new NotFoundException(
         `Campaign with ID ${dto.campaignId} not found`,
+      );
+    }
+
+    // Enforce ownership: a contract sets the on-chain destination that
+    // DonationsService later trusts, so only the campaign creator may attach one.
+    if (campaign.creatorId !== requesterUserId) {
+      throw new ForbiddenException(
+        'Only the campaign creator can register a contract',
       );
     }
 
