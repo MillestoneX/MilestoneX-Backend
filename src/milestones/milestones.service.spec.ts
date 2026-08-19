@@ -4,14 +4,18 @@ import {
   ForbiddenException,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { MilestonesService } from './milestones.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 describe('MilestonesService', () => {
   let service: MilestonesService;
   let prisma: {
+    $transaction: jest.Mock;
+    $queryRaw: jest.Mock;
     campaign: { findUnique: jest.Mock };
     milestone: { findUnique: jest.Mock };
+    donation: { aggregate: jest.Mock };
     fundRelease: {
       findFirst: jest.Mock;
       findUnique: jest.Mock;
@@ -19,6 +23,7 @@ describe('MilestonesService', () => {
       create: jest.Mock;
       update: jest.Mock;
       groupBy: jest.Mock;
+      aggregate: jest.Mock;
     };
   };
 
@@ -28,16 +33,7 @@ describe('MilestonesService', () => {
   const MILESTONE_ID = 'milestone-1';
   const RELEASE_ID = 'release-1';
 
-  // The service reads `campaign.raisedAmount.toString()` to compute
-  // available funds during fund-release validation. Most negative-path
-  // tests throw earlier (campaign missing / wrong creator / status),
-  // so a single non-zero mock value covers the happy-path tests
-  // without affecting any of the early-throw negatives.
-  const campaign = {
-    id: CAMPAIGN_ID,
-    creatorId: CREATOR_ID,
-    raisedAmount: '1000',
-  };
+  const campaign = { id: CAMPAIGN_ID, creatorId: CREATOR_ID };
   const milestone = {
     id: MILESTONE_ID,
     campaignId: CAMPAIGN_ID,
@@ -62,8 +58,22 @@ describe('MilestonesService', () => {
 
   beforeEach(async () => {
     prisma = {
+      // The interactive transaction runs its callback with the mock itself as
+      // `tx`, so every `tx.<model>.<op>` resolves to the matching mock below.
+      $transaction: jest.fn(async (fn: (tx: unknown) => Promise<unknown>) =>
+        fn(prisma),
+      ),
+      // `SELECT ... FOR UPDATE` returns the locked campaign row.
+      $queryRaw: jest
+        .fn()
+        .mockResolvedValue([{ id: CAMPAIGN_ID, creatorId: CREATOR_ID }]),
       campaign: { findUnique: jest.fn().mockResolvedValue(campaign) },
       milestone: { findUnique: jest.fn().mockResolvedValue(milestone) },
+      donation: {
+        aggregate: jest
+          .fn()
+          .mockResolvedValue({ _sum: { amount: { toString: () => '1000' } } }),
+      },
       fundRelease: {
         findFirst: jest.fn().mockResolvedValue(null),
         findUnique: jest.fn().mockResolvedValue(baseRelease),
@@ -73,6 +83,7 @@ describe('MilestonesService', () => {
           .fn()
           .mockResolvedValue({ ...baseRelease, status: 'CANCELLED' }),
         groupBy: jest.fn().mockResolvedValue([]),
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
       },
     };
 
@@ -100,16 +111,25 @@ describe('MilestonesService', () => {
       expect(result.status).toBe('PENDING');
       expect(result.amount).toBe('500');
       expect(prisma.fundRelease.create).toHaveBeenCalledTimes(1);
+      // Available funds must be recomputed from CONFIRMED donations only.
+      expect(prisma.donation.aggregate).toHaveBeenCalledWith({
+        where: { campaignId: CAMPAIGN_ID, status: 'CONFIRMED' },
+        _sum: { amount: true },
+      });
     });
 
     it('throws NotFoundException when the campaign is missing', async () => {
-      prisma.campaign.findUnique.mockResolvedValueOnce(null);
+      prisma.$queryRaw.mockResolvedValueOnce([]);
       await expect(
         service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
       ).rejects.toBeInstanceOf(NotFoundException);
     });
 
     it('throws ForbiddenException when caller is not the creator', async () => {
+      // Locked campaign is owned by CREATOR_ID, but the caller is OTHER_ID.
+      prisma.$queryRaw.mockResolvedValueOnce([
+        { id: CAMPAIGN_ID, creatorId: CREATOR_ID },
+      ]);
       await expect(
         service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, OTHER_ID, dto),
       ).rejects.toBeInstanceOf(ForbiddenException);
@@ -139,6 +159,71 @@ describe('MilestonesService', () => {
         service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
       ).rejects.toBeInstanceOf(BadRequestException);
       expect(prisma.fundRelease.create).not.toHaveBeenCalled();
+    });
+
+    it('rejects when the request plus outstanding releases exceeds confirmed raised', async () => {
+      // Campaign has 1000 confirmed raised; another milestone already has a
+      // 700 PENDING release reserved, leaving only 300 available for a 500 ask.
+      prisma.fundRelease.aggregate.mockResolvedValueOnce({
+        _sum: { amount: { toString: () => '700' } },
+      });
+
+      await expect(
+        service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      expect(prisma.fundRelease.create).not.toHaveBeenCalled();
+    });
+
+    it('derives available funds from CONFIRMED donations, not campaign.raisedAmount', async () => {
+      // Only 300 in CONFIRMED donations, so a 500 ask is rejected even though
+      // the milestone target (1000) would allow it.
+      prisma.donation.aggregate.mockResolvedValueOnce({
+        _sum: { amount: { toString: () => '300' } },
+      });
+
+      await expect(
+        service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
+      ).rejects.toBeInstanceOf(BadRequestException);
+
+      expect(prisma.donation.aggregate).toHaveBeenCalledWith({
+        where: { campaignId: CAMPAIGN_ID, status: 'CONFIRMED' },
+        _sum: { amount: true },
+      });
+      // The denormalised raisedAmount is never consulted.
+      expect(prisma.campaign.findUnique).not.toHaveBeenCalled();
+    });
+
+    it('returns a clean error when a concurrent duplicate hits the unique index', async () => {
+      // Simulate the race: both requests pass the findFirst guard, but the DB
+      // partial unique index rejects the second create with P2002. Exactly one
+      // pending release is created; the loser fails cleanly (400, not a raw
+      // Prisma error).
+      prisma.fundRelease.findFirst.mockResolvedValue(null);
+      prisma.fundRelease.create
+        .mockResolvedValueOnce(baseRelease)
+        .mockRejectedValueOnce(
+          new Prisma.PrismaClientKnownRequestError('unique violation', {
+            code: 'P2002',
+            clientVersion: '6.19.3',
+          }),
+        );
+
+      const results = await Promise.allSettled([
+        service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
+        service.requestFundRelease(CAMPAIGN_ID, MILESTONE_ID, CREATOR_ID, dto),
+      ]);
+
+      expect(prisma.fundRelease.create).toHaveBeenCalledTimes(2);
+      const fulfilled = results.filter((r) => r.status === 'fulfilled');
+      const rejected = results.filter((r) => r.status === 'rejected');
+      expect(fulfilled).toHaveLength(1);
+      expect(rejected).toHaveLength(1);
+
+      const reason = rejected[0].reason;
+      expect(reason).toBeInstanceOf(BadRequestException);
+      expect(reason.message).toBe(
+        'There is already a pending fund release for this milestone',
+      );
     });
   });
 
