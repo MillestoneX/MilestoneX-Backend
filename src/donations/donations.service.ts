@@ -11,6 +11,7 @@ import {
   StellarAcceptedAsset,
   StellarTransactionsService,
 } from '../stellar/stellar-transactions.service';
+import { SorobanService } from '../stellar/soroban.service';
 import { CreateDonationDto } from './dto/create-donation.dto';
 import {
   DonationResponseDto,
@@ -26,6 +27,7 @@ export class DonationsService {
     private readonly prisma: PrismaService,
     private readonly campaigns: CampaignsService,
     private readonly stellarTxs: StellarTransactionsService,
+    private readonly soroban: SorobanService,
   ) {}
 
   /** Creates a donation after verifying the transaction on Stellar */
@@ -265,9 +267,7 @@ export class DonationsService {
 
       const previousStatus = donation.status;
 
-      const { rpc: sorobanRpc } = await import('@stellar/stellar-sdk');
-      const server = new sorobanRpc.Server('https://soroban-rpc.stellar.org');
-      const response = await server.getTransaction(txHash);
+      const response = await this.soroban.getTransaction(txHash);
 
       if (response.status === 'SUCCESS') {
         await this.prisma.donation.update({
@@ -305,7 +305,13 @@ export class DonationsService {
         data: { status: 'FAILED' },
       });
       return false;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `verifyDonationOnChain failed for txHash=${txHash}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }
@@ -319,9 +325,7 @@ export class DonationsService {
 
       if (!tip) return false;
 
-      const { rpc: sorobanRpc } = await import('@stellar/stellar-sdk');
-      const server = new sorobanRpc.Server('https://soroban-rpc.stellar.org');
-      const response = await server.getTransaction(txHash);
+      const response = await this.soroban.getTransaction(txHash);
 
       if (response.status === 'SUCCESS') {
         await this.prisma.platformTip.update({
@@ -344,7 +348,13 @@ export class DonationsService {
         data: { status: 'FAILED' },
       });
       return false;
-    } catch {
+    } catch (error) {
+      this.logger.error(
+        `verifyTipOnChain failed for txHash=${txHash}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+        error instanceof Error ? error.stack : undefined,
+      );
       return false;
     }
   }

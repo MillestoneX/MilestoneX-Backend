@@ -4,6 +4,7 @@ import { DonationsService } from './donations.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { CampaignsService } from '../campaigns/campaigns.service';
 import { StellarTransactionsService } from '../stellar/stellar-transactions.service';
+import { SorobanService } from '../stellar/soroban.service';
 
 const mockPrisma = {
   donation: {
@@ -38,6 +39,10 @@ const mockStellarTxs = {
   verifyDonationTransaction: jest.fn(),
 };
 
+const mockSoroban = {
+  getTransaction: jest.fn(),
+};
+
 describe('DonationsService – createDonation', () => {
   let service: DonationsService;
 
@@ -48,6 +53,7 @@ describe('DonationsService – createDonation', () => {
         { provide: PrismaService, useValue: mockPrisma },
         { provide: CampaignsService, useValue: mockCampaignsService },
         { provide: StellarTransactionsService, useValue: mockStellarTxs },
+        { provide: SorobanService, useValue: mockSoroban },
       ],
     }).compile();
 
@@ -174,5 +180,93 @@ describe('DonationsService – createDonation', () => {
     expect(mockCampaignsService.recalculateCampaignStats).toHaveBeenCalledWith(
       'c1',
     );
+  });
+});
+
+describe('DonationsService – on-chain re-verification', () => {
+  let service: DonationsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        DonationsService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: CampaignsService, useValue: mockCampaignsService },
+        { provide: StellarTransactionsService, useValue: mockStellarTxs },
+        { provide: SorobanService, useValue: mockSoroban },
+      ],
+    }).compile();
+
+    service = module.get<DonationsService>(DonationsService);
+    jest.clearAllMocks();
+  });
+
+  it('re-verifies a confirmed donation via the injected SorobanService', async () => {
+    mockPrisma.donation.findUnique
+      .mockResolvedValueOnce({
+        id: 'd1',
+        txHash: 'tx123',
+        status: 'PENDING',
+        campaignId: 'c1',
+      })
+      .mockResolvedValue({
+        id: 'd1',
+        txHash: 'tx123',
+        status: 'CONFIRMED',
+        campaignId: 'c1',
+        tip: null,
+      });
+    mockSoroban.getTransaction.mockResolvedValue({ status: 'SUCCESS' });
+    mockPrisma.donation.update.mockResolvedValue({});
+    mockCampaignsService.recalculateCampaignStats.mockResolvedValue(undefined);
+
+    const result = await service.verifyDonationOnChain('tx123');
+
+    expect(result).toBe(true);
+    expect(mockSoroban.getTransaction).toHaveBeenCalledWith('tx123');
+    expect(mockPrisma.donation.update).toHaveBeenCalledWith({
+      where: { txHash: 'tx123' },
+      data: { status: 'CONFIRMED', confirmedAt: expect.any(Date) },
+    });
+  });
+
+  it('returns false and logs the cause when the RPC lookup throws', async () => {
+    mockPrisma.donation.findUnique.mockResolvedValue({
+      id: 'd1',
+      txHash: 'tx123',
+      status: 'PENDING',
+      campaignId: 'c1',
+    });
+    mockSoroban.getTransaction.mockRejectedValue(new Error('rpc down'));
+
+    const loggerSpy = jest.spyOn((service as any).logger, 'error');
+
+    const result = await service.verifyDonationOnChain('tx123');
+
+    expect(result).toBe(false);
+    expect(loggerSpy).toHaveBeenCalledWith(
+      expect.stringContaining('verifyDonationOnChain failed for txHash=tx123'),
+      expect.any(String),
+    );
+  });
+
+  it('re-verifies a confirmed tip via the injected SorobanService', async () => {
+    mockPrisma.platformTip.findUnique.mockResolvedValue({
+      id: 't1',
+      txHash: 'tx456',
+      donationId: 'd1',
+    });
+    mockSoroban.getTransaction.mockResolvedValue({ status: 'SUCCESS' });
+    mockPrisma.platformTip.update.mockResolvedValue({});
+    mockPrisma.donation.update.mockResolvedValue({});
+
+    const result = await service.verifyTipOnChain('tx456');
+
+    expect(result).toBe(true);
+    expect(mockSoroban.getTransaction).toHaveBeenCalledWith('tx456');
+    expect(mockPrisma.platformTip.update).toHaveBeenCalledWith({
+      where: { txHash: 'tx456' },
+      data: { status: 'CONFIRMED', confirmedAt: expect.any(Date) },
+    });
   });
 });
