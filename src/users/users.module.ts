@@ -5,6 +5,8 @@ import { UsersService } from './users.service';
 import { UsersController, AdminUsersController } from './users.controller';
 import { ExportProcessor } from './export.processor';
 import { PrismaModule } from '../prisma/prisma.module';
+import { ApiKeysModule } from '../api-keys/api-keys.module';
+import { ScopeGuard } from '../common/guards/scope.guard';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { QUEUE_EXPORT } from '../queue/queue.constants';
@@ -18,9 +20,16 @@ import { QUEUE_EXPORT } from '../queue/queue.constants';
       signOptions: { expiresIn: '7d' },
     }),
     BullModule.registerQueue({ name: QUEUE_EXPORT }),
+    ApiKeysModule,
   ],
   controllers: [UsersController, AdminUsersController],
-  providers: [UsersService, JwtAuthGuard, AdminGuard, ExportProcessor],
+  providers: [
+    UsersService,
+    JwtAuthGuard,
+    AdminGuard,
+    ExportProcessor,
+    ScopeGuard,
+  ],
   exports: [UsersService],
 })
 export class UsersModule {}
