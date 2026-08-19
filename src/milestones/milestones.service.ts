@@ -17,9 +17,23 @@ export class MilestonesService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Request fund release for an unlocked milestone
-   * Only campaign creator can request
-   * Milestone must be in UNLOCKED status
+   * Request fund release for an unlocked milestone.
+   *
+   * Only the campaign creator can request, and the milestone must be in
+   * UNLOCKED status. The whole validation-and-create flow runs in one
+   * interactive transaction that:
+   *
+   *   1. locks the campaign row (`SELECT ... FOR UPDATE`) so concurrent
+   *      requests for the same campaign are serialised — this is what makes
+   *      the funds-available check race-free, because the outstanding-release
+   *      aggregate below always observes every already-committed release;
+   *   2. recomputes the confirmed raised amount directly from CONFIRMED
+   *      donations (REFUNDED/FAILED/PENDING donations are excluded) instead
+   *      of trusting the denormalised `Campaign.raisedAmount`; and
+   *   3. creates the PENDING release. A partial unique index on
+   *      `fund_releases(milestoneId) WHERE status = 'PENDING'` backstops the
+   *      one-pending-release-per-milestone invariant, and its P2002 violation
+   *      is translated into a clean 400 instead of a raw DB error.
    */
   async requestFundRelease(
     campaignId: string,
@@ -27,102 +41,148 @@ export class MilestonesService {
     creatorId: string,
     dto: RequestFundReleaseDto,
   ): Promise<FundReleaseResponseDto> {
-    // Verify campaign exists and creator is authorized
-    const campaign = await this.prisma.campaign.findUnique({
-      where: { id: campaignId },
-    });
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        // ── 1. Lock the campaign row and authorize the caller ──────
+        const locked = await tx.$queryRaw<
+          Array<{ id: string; creatorId: string }>
+        >`
+          SELECT id, "creatorId"
+          FROM campaigns
+          WHERE id = ${campaignId}
+          FOR UPDATE
+        `;
 
-    if (!campaign) {
-      throw new NotFoundException('Campaign not found');
+        const campaign = locked[0];
+        if (!campaign) {
+          throw new NotFoundException('Campaign not found');
+        }
+
+        if (campaign.creatorId !== creatorId) {
+          throw new ForbiddenException(
+            'Only campaign creator can request fund release',
+          );
+        }
+
+        // ── 2. Milestone existence + status check ─────────────────
+        const milestone = await tx.milestone.findUnique({
+          where: { id: milestoneId },
+        });
+
+        if (!milestone) {
+          throw new NotFoundException('Milestone not found');
+        }
+
+        if (milestone.campaignId !== campaignId) {
+          throw new BadRequestException(
+            'Milestone does not belong to this campaign',
+          );
+        }
+
+        if (milestone.status !== 'UNLOCKED') {
+          throw new BadRequestException(
+            `Milestone must be in UNLOCKED status. Current status: ${milestone.status}`,
+          );
+        }
+
+        // ── 3. Amount validation ──────────────────────────────────
+        const releaseAmount = parseFloat(dto.amount);
+        if (releaseAmount <= 0) {
+          throw new BadRequestException(
+            'Release amount must be greater than 0',
+          );
+        }
+
+        if (releaseAmount > parseFloat(milestone.targetAmount.toString())) {
+          throw new BadRequestException(
+            `Release amount cannot exceed milestone target of ${milestone.targetAmount}`,
+          );
+        }
+
+        // ── 4. Available funds = CONFIRMED donations − outstanding ─
+        // Confirmed raised is recomputed from donations (not the denormalised
+        // Campaign.raisedAmount) so REFUNDED/FAILED/PENDING donations never
+        // count toward what can be released.
+        const confirmedAgg = await tx.donation.aggregate({
+          where: { campaignId, status: 'CONFIRMED' },
+          _sum: { amount: true },
+        });
+        const confirmedRaised = parseFloat(
+          confirmedAgg._sum.amount?.toString() ?? '0',
+        );
+
+        const outstandingAgg = await tx.fundRelease.aggregate({
+          where: {
+            campaignId,
+            status: { in: ['PENDING', 'APPROVED'] },
+          },
+          _sum: { amount: true },
+        });
+
+        const outstandingTotal = parseFloat(
+          outstandingAgg._sum.amount?.toString() ?? '0',
+        );
+
+        const availableFunds = confirmedRaised - outstandingTotal;
+
+        if (releaseAmount > availableFunds) {
+          throw new BadRequestException(
+            `Release amount (${releaseAmount}) exceeds available campaign funds (${availableFunds}). ` +
+              `Raised: ${confirmedRaised}, already reserved: ${outstandingTotal}`,
+          );
+        }
+
+        // ── 5. Duplicate-pending guard ────────────────────────────
+        const existingRelease = await tx.fundRelease.findFirst({
+          where: {
+            milestoneId,
+            status: 'PENDING',
+          },
+        });
+
+        if (existingRelease) {
+          throw new BadRequestException(
+            'There is already a pending fund release for this milestone',
+          );
+        }
+
+        // ── 6. Create the release ─────────────────────────────────
+        const fundRelease = await tx.fundRelease.create({
+          data: {
+            milestone: { connect: { id: milestoneId } },
+            campaign: { connect: { id: campaignId } },
+            creator: { connect: { id: creatorId } },
+            amount: releaseAmount,
+            status: 'PENDING',
+            signaturePayload: dto.signaturePayload || null,
+            releaseReason: dto.releaseReason || null,
+          },
+        });
+
+        return {
+          id: fundRelease.id,
+          milestoneId: fundRelease.milestoneId,
+          campaignId: fundRelease.campaignId,
+          creatorId: fundRelease.creatorId,
+          amount: fundRelease.amount.toString(),
+          status: fundRelease.status,
+          txHash: fundRelease.txHash,
+          releaseReason: fundRelease.releaseReason,
+          createdAt: fundRelease.createdAt,
+          updatedAt: fundRelease.updatedAt,
+        };
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new BadRequestException(
+          'There is already a pending fund release for this milestone',
+        );
+      }
+      throw error;
     }
-
-    if (campaign.creatorId !== creatorId) {
-      throw new ForbiddenException(
-        'Only campaign creator can request fund release',
-      );
-    }
-
-    // Verify milestone exists and is UNLOCKED
-    const milestone = await this.prisma.milestone.findUnique({
-      where: { id: milestoneId },
-      include: { campaign: true },
-    });
-
-    if (!milestone) {
-      throw new NotFoundException('Milestone not found');
-    }
-
-    if (milestone.campaignId !== campaignId) {
-      throw new BadRequestException(
-        'Milestone does not belong to this campaign',
-      );
-    }
-
-    if (milestone.status !== 'UNLOCKED') {
-      throw new BadRequestException(
-        `Milestone must be in UNLOCKED status. Current status: ${milestone.status}`,
-      );
-    }
-
-    // Validate amount
-    const releaseAmount = parseFloat(dto.amount);
-    if (releaseAmount <= 0) {
-      throw new BadRequestException('Release amount must be greater than 0');
-    }
-
-    if (releaseAmount > parseFloat(milestone.targetAmount.toString())) {
-      throw new BadRequestException(
-        `Release amount cannot exceed milestone target of ${milestone.targetAmount}`,
-      );
-    }
-
-    // Ensure the release amount does not exceed available (raised) campaign funds
-    const availableFunds = parseFloat(campaign.raisedAmount.toString());
-    if (releaseAmount > availableFunds) {
-      throw new BadRequestException(
-        `Release amount (${releaseAmount}) exceeds available campaign funds (${availableFunds})`,
-      );
-    }
-
-    // Check if there's already a pending release for this milestone
-    const existingRelease = await this.prisma.fundRelease.findFirst({
-      where: {
-        milestoneId,
-        status: 'PENDING',
-      },
-    });
-
-    if (existingRelease) {
-      throw new BadRequestException(
-        'There is already a pending fund release for this milestone',
-      );
-    }
-
-    // Create fund release record
-    const fundRelease = await this.prisma.fundRelease.create({
-      data: {
-        milestone: { connect: { id: milestoneId } },
-        campaign: { connect: { id: campaignId } },
-        creator: { connect: { id: creatorId } },
-        amount: releaseAmount,
-        status: 'PENDING',
-        signaturePayload: dto.signaturePayload || null,
-        releaseReason: dto.releaseReason || null,
-      },
-    });
-
-    return {
-      id: fundRelease.id,
-      milestoneId: fundRelease.milestoneId,
-      campaignId: fundRelease.campaignId,
-      creatorId: fundRelease.creatorId,
-      amount: fundRelease.amount.toString(),
-      status: fundRelease.status,
-      txHash: fundRelease.txHash,
-      releaseReason: fundRelease.releaseReason,
-      createdAt: fundRelease.createdAt,
-      updatedAt: fundRelease.updatedAt,
-    };
   }
 
   /**
