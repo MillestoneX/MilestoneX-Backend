@@ -14,7 +14,12 @@ import {
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import type { CreateUpdateDto } from './dto/create-update.dto';
-import { ContractBalanceResponseDto } from './dto/contract-balance.dto';
+import {
+  NATIVE_ASSET_CODE,
+  buildRaisedByAsset,
+  nativeRaisedAmount,
+  recalculateCampaignRaised,
+} from './campaign-raised.helper';
 
 const MIN_MILESTONE_TARGET_AMOUNT = 0.0000001;
 
@@ -167,6 +172,9 @@ export class CampaignsService {
     let orderBy: Prisma.CampaignOrderByWithRelationInput;
     switch (sortBy) {
       case 'mostFunded':
+        // `raisedAmount` holds only the native-XLM (base asset) portion, so
+        // sorting by it ranks campaigns by a single well-defined unit rather
+        // than a mixed sum of heterogeneous assets.
         orderBy = { raisedAmount: 'desc' };
         break;
       case 'endingSoon':
@@ -256,8 +264,14 @@ export class CampaignsService {
   }
 
   /**
-   * Fetch on-chain contract balance from Stellar and compare with stored raisedAmount.
-   * Auto-corrects discrepancies.
+   * Fetch on-chain contract balances from Stellar, reported per asset.
+   *
+   * The previous implementation summed native and issued balances into a
+   * single mixed-unit `onChainTotal` and wrote it back to `raisedAmount`,
+   * actively persisting a meaningless scalar. Balances are now returned per
+   * asset and the stored totals are never overwritten: a mixed-unit scalar is
+   * meaningless, and on-chain balance legitimately diverges from raised totals
+   * once funds are released.
    */
   async getContractBalance(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
@@ -276,56 +290,28 @@ export class CampaignsService {
       campaign.contractId,
     );
 
-    // Calculate total on-chain balance
-    let onChainTotal = 0;
-    for (const b of balances) {
-      onChainTotal += parseFloat(b.balance);
-    }
-
-    const storedRaisedAmount = parseFloat(campaign.raisedAmount.toString());
-    const discrepancyDetected =
-      Math.abs(onChainTotal - storedRaisedAmount) > 0.0001;
-
-    // If discrepancy detected, update the stored raisedAmount
-    if (discrepancyDetected) {
-      await this.prisma.campaign.update({
-        where: { id: campaignId },
-        data: {
-          raisedAmount: onChainTotal,
-        },
-      });
-    }
+    const storedRaisedByAsset = (campaign.raisedByAsset ?? {}) as Record<
+      string,
+      string
+    >;
 
     return {
       contractId: campaign.contractId,
       balances,
-      storedRaisedAmount: campaign.raisedAmount.toString(),
-      onChainTotal: onChainTotal.toString(),
-      discrepancyDetected,
+      storedRaisedByAsset,
     };
   }
 
   /**
-   * Recalculate a campaign's raisedAmount from confirmed donations.
-   * Uses a Prisma $transaction to ensure the aggregate read and campaign
-   * update happen atomically.
+   * Recalculate a campaign's raised totals from confirmed donations.
+   * Aggregates per asset (never summing across different assets):
+   * `raisedByAsset` stores the full breakdown while `raisedAmount` stores the
+   * native-XLM portion only. Runs in a Prisma $transaction so the aggregate
+   * read and campaign update happen atomically.
    */
   async recalculateCampaignStats(campaignId: string) {
     await this.prisma.$transaction(async (tx) => {
-      const agg = await tx.donation.aggregate({
-        where: {
-          campaignId,
-          status: 'CONFIRMED',
-        },
-        _sum: { amount: true },
-      });
-
-      const raisedAmount = agg._sum.amount ?? new Prisma.Decimal(0);
-
-      await tx.campaign.update({
-        where: { id: campaignId },
-        data: { raisedAmount },
-      });
+      await recalculateCampaignRaised(tx, campaignId);
     });
   }
 
@@ -424,7 +410,13 @@ export class CampaignsService {
     });
   }
 
-  /** Compute aggregate stats for a campaign: total raised, donor count, progress %, etc. */
+  /**
+   * Compute aggregate stats for a campaign: per-asset raised totals, donor
+   * count, progress %, etc. Heterogeneous assets are never summed together;
+   * `raisedByAsset` carries the per-asset breakdown while `totalRaised` and
+   * `progressPercentage` are expressed in the single well-defined native-XLM
+   * base unit.
+   */
   async getCampaignStats(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
@@ -435,15 +427,31 @@ export class CampaignsService {
 
     const donations = await this.prisma.donation.findMany({
       where: { campaignId, status: 'CONFIRMED' },
-      select: { amount: true, donorId: true, assetCode: true, createdAt: true },
+      select: {
+        amount: true,
+        donorId: true,
+        assetCode: true,
+        assetIssuer: true,
+      },
     });
 
-    // Safely handle edge case of zero donations
-    const totalRaised = donations.reduce((sum, d) => sum + Number(d.amount), 0);
+    const raisedByAsset = buildRaisedByAsset(
+      donations.map((d) => ({
+        assetCode: d.assetCode,
+        assetIssuer: d.assetIssuer,
+        amount: d.amount,
+      })),
+    );
+
+    // Single well-defined unit: native XLM (base asset).
+    const totalRaised = Number(nativeRaisedAmount(raisedByAsset));
     const donorCount = new Set(donations.map((d) => d.donorId)).size;
     const uniqueAssets = [...new Set(donations.map((d) => d.assetCode))];
+    const nativeDonationCount = donations.filter(
+      (d) => d.assetCode === NATIVE_ASSET_CODE,
+    ).length;
     const avgDonation =
-      donations.length > 0 ? totalRaised / donations.length : 0;
+      nativeDonationCount > 0 ? totalRaised / nativeDonationCount : 0;
 
     const goalAmount = Number(campaign.goalAmount);
     const progressPercentage =
@@ -457,6 +465,7 @@ export class CampaignsService {
     return {
       campaignId,
       totalRaised,
+      raisedByAsset,
       goalAmount,
       progressPercentage,
       donorCount,
@@ -562,6 +571,7 @@ function campaignBrowseSelect() {
     story: true,
     goalAmount: true,
     raisedAmount: true,
+    raisedByAsset: true,
     status: true,
     creatorId: true,
     startDate: true,

@@ -63,7 +63,10 @@ export class CampaignsController {
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
-  @ApiOperation({ summary: 'Get campaign statistics (creator/admin only)' })
+  @ApiOperation({
+    summary:
+      'Get campaign statistics with per-asset raised totals (creator/admin only)',
+  })
   @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Get(':id/stats')
   @Roles('creator', 'admin')
@@ -139,11 +142,11 @@ export class CampaignsController {
 
   /**
    * GET /campaigns/:id/contract-balance
-   * Fetch on-chain balances for the campaign's Stellar contract account.
-   * Discrepancies between on-chain and stored amounts are flagged and auto-corrected.
+   * Fetch on-chain balances for the campaign's Stellar contract account,
+   * reported per asset. Stored totals are never overwritten.
    */
   @ApiOperation({
-    summary: 'Fetch on-chain contract balance and detect discrepancies',
+    summary: 'Fetch on-chain contract balances (per asset)',
   })
   @ApiParam({ name: 'id', description: 'Campaign UUID' })
   @Get(':id/contract-balance')

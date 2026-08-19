@@ -34,6 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CHANGELOG.md` (this file)
 
 ### Changed
+- `Campaign.raisedAmount` now stores only the native-XLM (base asset) portion; a new `raisedByAsset` JSON column holds the per-asset breakdown
+- `getContractBalance` now reports on-chain balances per asset and never overwrites stored totals
 - `UpdateCampaignDto` now supports `category` and `endDate` fields
 - `updateCampaign` service method validates ownership and future `endDate`
 - `CampaignsController.update` now correctly uses `req.user.sub` (JWT subject) instead of `req.user.id`
@@ -49,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `package.json` scripts: added `lint:fix` and `format:check`; separated `lint` from auto-fix
 
 ### Fixed
+- Multi-asset campaigns no longer report corrupted mixed-unit totals; `raisedAmount`, `progressPercentage`, and `mostFunded` sorting are computed from the native-XLM base unit with per-asset totals in `raisedByAsset`
 - Missing `donatedAt` index on the `donations` table added to Prisma schema
 - Milestone `dueDate` validation now enforces future dates
 - Fund release amount now validated against available `raisedAmount` (not just milestone target)

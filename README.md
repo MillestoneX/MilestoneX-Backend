@@ -226,6 +226,30 @@ All donation CSV exports (`GET /users/me/donations/export` and the async queue v
 
 ---
 
+## Multi-Asset Campaign Totals
+
+A campaign can accept multiple assets (`acceptedAssets`: native XLM and/or issued
+assets such as `USDC:<issuer>`), so raised totals are never collapsed into a single
+mixed-unit number.
+
+| Field | Shape | Meaning |
+| --- | --- | --- |
+| `raisedByAsset` | `Record<string, string>` | Per-asset raised totals. Keys are `XLM` (native) or `CODE:ISSUER` (issued); values are decimal strings. |
+| `raisedAmount` | decimal string | The native-XLM (base asset) portion only. Powers `mostFunded` browse sorting. |
+| `progressPercentage` | number (0–100) | Native-XLM raised ÷ `goalAmount` (XLM-denominated), capped at 100. |
+
+`GET /campaigns/:id/stats` returns `raisedByAsset` alongside the native-XLM scalar
+fields. `GET /campaigns/:id/contract-balance` reports on-chain balances per asset
+and **never** overwrites stored totals.
+
+> **Fiat conversion is intentionally out of scope.** Without a price-oracle
+> integration, heterogeneous assets cannot be converted into a single monetary
+> value. Clients should render `raisedByAsset` per asset. A future price oracle
+> can feed these per-asset amounts into a USD-equivalent summary without another
+> schema change.
+
+---
+
 ## Environment Variables Reference
 
 All configuration is provided via environment variables. Copy `.env.example` to `.env` and fill in the values.

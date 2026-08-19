@@ -99,7 +99,7 @@ describe('AdminService – refundDonation', () => {
         donation: {
           findUnique: jest.fn().mockResolvedValue(confirmedDonation),
           update: jest.fn().mockResolvedValue(refundedDonation),
-          aggregate: jest.fn().mockResolvedValue({ _sum: { amount: null } }),
+          groupBy: jest.fn().mockResolvedValue([]),
         },
         campaign: { update: jest.fn().mockResolvedValue({}) },
       };
