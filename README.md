@@ -157,6 +157,23 @@ npm run test:cov
 
 ---
 
+## API Key Access
+
+API keys are created and revoked via `/api-keys/*` (JWT-authenticated) and
+authenticate programmatic requests through the `X-API-Key` header.
+
+| Endpoint  | Method | Scope honored | Description                            |
+| --------- | ------ | ------------- | -------------------------------------- |
+| `/users/me` | `GET`  | `read`        | Returns the key owner's full profile.  |
+
+`GET /users/me` accepts **either** a Bearer JWT **or** an `X-API-Key` header.
+For API-key requests, `ScopeGuard` validates the `scope` stored on the key
+(default `read`) against the endpoint's honored scopes; a key whose scope is
+not honored receives `403 Forbidden`, and a revoked key (`isActive: false`)
+receives `401 Unauthorized`. Every other endpoint remains JWT-only.
+
+---
+
 ## Project Structure
 
 ```

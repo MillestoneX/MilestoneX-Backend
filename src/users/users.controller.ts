@@ -15,9 +15,13 @@ import {
   ApiOperation,
   ApiParam,
   ApiQuery,
+  ApiSecurity,
 } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { UsersService } from './users.service';
+import { ApiKeyAuthGuard } from '../api-keys/api-key-auth.guard';
+import { ScopeGuard } from '../common/guards/scope.guard';
+import { Scopes } from '../common/decorators/scopes.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateKYCStatusDto } from './dto/update-kyc-status.dto';
 import { UserProfileDto, PublicUserProfileDto } from './dto/user-profile.dto';
@@ -47,9 +51,14 @@ export class UsersController {
     return this.usersService.getUserActivitySummary(userId);
   }
 
-  /** GET /users/me — Retrieve authenticated user's full profile */
+  /**
+   * GET /users/me — Retrieve authenticated user's full profile.
+   * Accepts either a Bearer JWT or a valid `X-API-Key` header (scope `read`).
+   */
   @ApiOperation({ summary: "Get the current user's full profile" })
-  @UseGuards(JwtAuthGuard)
+  @ApiSecurity('X-API-Key')
+  @Scopes('read')
+  @UseGuards(ApiKeyAuthGuard, ScopeGuard)
   @Get('me')
   async getMyProfile(@Request() req: any): Promise<UserProfileDto> {
     return this.usersService.getMyProfile(req.user.walletAddress);
