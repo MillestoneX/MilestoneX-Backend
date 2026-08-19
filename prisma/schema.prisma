@@ -167,6 +167,10 @@ model Campaign {
   story        String?
   goalAmount   Decimal        @db.Decimal(20, 7)
   raisedAmount Decimal        @default(0) @db.Decimal(20, 7)
+  /// Per-asset raised totals as JSONB. Keys are `XLM` for the native asset and
+  /// `CODE:ISSUER` for issued assets; values are decimal strings.
+  /// `raisedAmount` holds only the native-XLM portion (the base asset).
+  raisedByAsset Json?
   status       CampaignStatus @default(DRAFT)
   creatorId    String
   contractId   String?

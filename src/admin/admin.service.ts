@@ -3,10 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { SuspendCampaignDto } from './dtos/suspend-campaign.dto';
+import { recalculateCampaignRaised } from '../campaigns/campaign-raised.helper';
 
 @Injectable()
 export class AdminService {
@@ -188,21 +188,10 @@ export class AdminService {
         data: { status: 'REFUNDED' },
       });
 
-      // Recalculate campaign raisedAmount atomically within the same transaction
-      const agg = await tx.donation.aggregate({
-        where: {
-          campaignId: donation.campaignId,
-          status: 'CONFIRMED',
-        },
-        _sum: { amount: true },
-      });
-
-      const raisedAmount = agg._sum.amount ?? new Prisma.Decimal(0);
-
-      await tx.campaign.update({
-        where: { id: donation.campaignId },
-        data: { raisedAmount },
-      });
+      // Recalculate campaign raised totals (per asset) atomically within the
+      // same transaction. Uses the shared asset-aware aggregation so refunds
+      // never sum heterogeneous assets into a mixed-unit scalar.
+      await recalculateCampaignRaised(tx, donation.campaignId);
 
       return {
         id: updated.id,
