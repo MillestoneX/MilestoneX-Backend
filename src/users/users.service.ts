@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bull';
 import type { Queue } from 'bull';
@@ -567,14 +568,20 @@ export class UsersService {
   /**
    * Poll the status of an async export job.
    * Returns the CSV when the job is complete.
+   * Rejects with 403 if the requesting user does not own the job.
    */
   async getExportJobStatus(
     jobId: string,
+    userId: string,
   ): Promise<{ status: string; csv?: string; rowCount?: number }> {
     const job = await this.exportQueue.getJob(jobId);
 
     if (!job) {
       throw new NotFoundException(`Export job ${jobId} not found`);
+    }
+
+    if (job.data.userId !== userId) {
+      throw new ForbiddenException('You do not have access to this export job');
     }
 
     const state = await job.getState();
