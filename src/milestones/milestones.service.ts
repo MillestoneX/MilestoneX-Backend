@@ -127,11 +127,11 @@ export class MilestonesService {
 
   /**
    * Retrieve a single fund release record by ID.
-   * Optionally verifies that the requesting user is the creator.
+   * Only the campaign creator or an admin may view it.
    */
   async getFundReleaseById(
     releaseId: string,
-    userId?: string,
+    requester: { userId: string; role: string },
   ): Promise<FundReleaseDetailDto> {
     const fundRelease = await this.prisma.fundRelease.findUnique({
       where: { id: releaseId },
@@ -140,6 +140,7 @@ export class MilestonesService {
           select: {
             id: true,
             title: true,
+            creatorId: true,
           },
         },
       },
@@ -149,9 +150,9 @@ export class MilestonesService {
       throw new NotFoundException('Fund release not found');
     }
 
-    // Check authorization if userId provided
-    if (userId && fundRelease.creatorId !== userId) {
-      // Could also allow admin here
+    const isCreator = fundRelease.creatorId === requester.userId;
+    const isAdmin = requester.role === 'ADMIN';
+    if (!isCreator && !isAdmin) {
       throw new ForbiddenException('Not authorized to view this fund release');
     }
 
@@ -171,16 +172,20 @@ export class MilestonesService {
   }
 
   /**
-   * List all fund releases for a campaign, optionally filtered by creator.
+   * List all fund releases for a campaign.
+   * Non-admin users only see their own releases.
    */
-  async getCampaignFundReleases(campaignId: string, creatorId?: string) {
+  async getCampaignFundReleases(
+    campaignId: string,
+    requester: { userId: string; role: string },
+  ) {
     const where: Prisma.FundReleaseWhereInput = {
       campaignId,
     };
 
-    // If creatorId provided, only return their releases
-    if (creatorId) {
-      where.creatorId = creatorId;
+    const isAdmin = requester.role === 'ADMIN';
+    if (!isAdmin) {
+      where.creatorId = requester.userId;
     }
 
     const fundReleases = await this.prisma.fundRelease.findMany({
@@ -216,8 +221,29 @@ export class MilestonesService {
 
   /**
    * Aggregate fund release stats grouped by status for a campaign.
+   * Only the campaign creator or an admin may view stats.
    */
-  async getCampaignFundReleaseStats(campaignId: string) {
+  async getCampaignFundReleaseStats(
+    campaignId: string,
+    requester: { userId: string; role: string },
+  ) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      select: { creatorId: true },
+    });
+
+    if (!campaign) {
+      throw new NotFoundException('Campaign not found');
+    }
+
+    const isCreator = campaign.creatorId === requester.userId;
+    const isAdmin = requester.role === 'ADMIN';
+    if (!isCreator && !isAdmin) {
+      throw new ForbiddenException(
+        'Not authorized to view fund release stats for this campaign',
+      );
+    }
+
     const stats = await this.prisma.fundRelease.groupBy({
       by: ['status'],
       where: { campaignId },

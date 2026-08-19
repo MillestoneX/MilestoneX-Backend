@@ -62,34 +62,53 @@ export class MilestonesController {
   }
 
   /** GET fund release details by release ID */
+  @UseGuards(JwtAuthGuard)
   @Get(':milestoneId/fund-releases/:releaseId')
   async getFundRelease(
     @Param('campaignId') campaignId: string,
     @Param('milestoneId') milestoneId: string,
     @Param('releaseId') releaseId: string,
-    @Request() req?: any,
+    @Request() req: any,
   ) {
-    const userId = req?.user?.sub;
-    return this.milestonesService.getFundReleaseById(releaseId, userId);
+    const requester = {
+      userId: req.user.sub as string,
+      role: req.user.role as string,
+    };
+    return this.milestonesService.getFundReleaseById(releaseId, requester);
   }
 
-  /** List all fund releases for a campaign, optionally scoped to creator */
+  /** List all fund releases for a campaign */
+  @UseGuards(JwtAuthGuard)
   @Get('fund-releases')
   async getCampaignFundReleases(
     @Param('campaignId') campaignId: string,
-    @Request() req?: any,
+    @Request() req: any,
   ) {
-    const creatorId = req?.user?.sub;
+    const requester = {
+      userId: req.user.sub as string,
+      role: req.user.role as string,
+    };
     return this.milestonesService.getCampaignFundReleases(
       campaignId,
-      creatorId,
+      requester,
     );
   }
 
   /** Aggregate fund release stats grouped by status for a campaign */
+  @UseGuards(JwtAuthGuard)
   @Get('fund-releases/stats')
-  async getFundReleaseStats(@Param('campaignId') campaignId: string) {
-    return this.milestonesService.getCampaignFundReleaseStats(campaignId);
+  async getFundReleaseStats(
+    @Param('campaignId') campaignId: string,
+    @Request() req: any,
+  ) {
+    const requester = {
+      userId: req.user.sub as string,
+      role: req.user.role as string,
+    };
+    return this.milestonesService.getCampaignFundReleaseStats(
+      campaignId,
+      requester,
+    );
   }
 
   /** Cancel a pending fund release (creator only) */
