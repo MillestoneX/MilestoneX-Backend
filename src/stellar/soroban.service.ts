@@ -52,6 +52,15 @@ export class SorobanService {
     return this.server;
   }
 
+  /**
+   * Fetch a transaction by hash from the configured Soroban RPC endpoint.
+   * Delegates network selection to the single RPC client constructed from
+   * STELLAR_RPC_URL so callers never hardcode a network.
+   */
+  async getTransaction(hash: string): Promise<rpc.Api.GetTransactionResponse> {
+    return this.server.getTransaction(hash);
+  }
+
   getNetworkPassphrase(): string {
     return this.networkPassphrase;
   }
